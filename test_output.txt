@@ -1,0 +1,4 @@
+Cluster execution works!
+Hostname: midway3-0029.rcc.local
+Date: Wed Oct  1 15:43:25 CDT 2025
+Job completed successfully
