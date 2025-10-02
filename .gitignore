@@ -1,3 +1,4 @@
 .DS_Store
 .snakemake/
 data/
+outputs/fastqc_reports/
