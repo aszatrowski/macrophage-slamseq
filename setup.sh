@@ -4,7 +4,7 @@ echo "conda cache:" "$USE_CONDA_CACHE"
 module load python/miniforge-25.3.0
 echo "Loaded python/miniforge-25.3.0"
 
-ENV_NAME="${1:-myenv}"
+ENV_NAME="${1:-slamseq_fastp}"
 
 if [ -d "/project/lbarreiro/USERS/austin/envs/$ENV_NAME" ]; then
     source activate /project/lbarreiro/USERS/austin/envs/"$ENV_NAME"
