@@ -26,7 +26,7 @@ rule all:
         )
 
 rule process_fastp:
-    input:  
+    input: # n is necessary so all parts have the same wildcards 
         r1 = f'{data_path}/{{sample_id}}_R1_{{n}}.fastq.gz',
         r2 = f'{data_path}/{{sample_id}}_R2_{{n}}.fastq.gz'
     output:
