@@ -5,22 +5,20 @@ n_tag = ['001']
 rule all:
     input: 
         expand(
-            f'{data_path}/trimmed/{{sample_id}}_R1_{{n}}.fastq.gz',
-            sample_id = sample_ids,
-            n = n_tag
-        ),
-        expand(
-            f'{data_path}/trimmed/{{sample_id}}_R2_{{n}}.fastq.gz',
-            sample_id = sample_ids,
-            n = n_tag
-        ),
-        expand(
             "outputs/fastp_reports/{sample_id}_{n}.html",
             sample_id = sample_ids,
             n = n_tag
         ),
         expand(
             "outputs/fastp_reports/{sample_id}_{n}.json",
+            sample_id = sample_ids,
+            n = n_tag
+        ),
+        expand(
+            f'{data_path}/hisat3n_indexes/{{sample_id}}_{{R}}_{{n}}.3n.{{converted_bases}}.{{index_n}}.ht2',
+            R = ['R1', 'R2'],
+            index_n = range(8),
+            converted_bases = ['CT', 'GA'], # using a C>T conversion + reverse complement
             sample_id = sample_ids,
             n = n_tag
         )
@@ -52,4 +50,34 @@ rule process_fastp:
             --thread {threads} \
             {params.extra} \
             2> {log}
+        """
+
+rule build_hisat3n_index:
+    input: 
+        f'{data_path}/trimmed/{{sample_id}}_{{R}}_{{n}}.fastq.gz',
+    output: 
+        f'{data_path}/hisat3n_indexes/{{sample_id}}_{{R}}_{{n}}.3n.{{converted_bases}}.{{index_n}}.ht2',
+    resources: 
+        slurm_account='pi-lbarreiro',
+        runtime=60,
+        mem_mb=16000,
+    shell:  
+        f"""
+        hisat-3n-build --base-change T,C {{input}} {data_path}/hisat3n_indexes/{{wildcards.sample_id}}_{{wildcards.R}}_{{wildcards.n}}
+        """
+    
+rule align_hisat3n:
+    input: 
+    output: 
+    resources: 
+        slurm_account='pi-lbarreiro',
+        runtime=60
+    shell: 
+        """
+        hisat-3n \
+        -x $indexfile \
+        -p 5 \
+        -q \ # for .fastq, not .fasta
+        -1 $R1 -2 $R2 \
+        -S  "$dir_out"/"$file_out_sam" --base-change T,C --rna-strandness RF
         """
