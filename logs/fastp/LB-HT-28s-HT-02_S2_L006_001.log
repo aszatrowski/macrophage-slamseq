@@ -6,3 +6,48 @@ Detecting adapter sequence for read2...
 >Illumina TruSeq Adapter Read 2
 AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
 
+Read1 before filtering:
+total reads: 71487549
+total bases: 11295032742
+Q20 bases: 11070212733(98.0096%)
+Q30 bases: 10533336523(93.2564%)
+Q40 bases: 10533336523(93.2564%)
+
+Read2 before filtering:
+total reads: 71487549
+total bases: 11295032742
+Q20 bases: 11042095612(97.7606%)
+Q30 bases: 10577564012(93.6479%)
+Q40 bases: 10577564012(93.6479%)
+
+Read1 after filtering:
+total reads: 70250767
+total bases: 10877850261
+Q20 bases: 10719732305(98.5464%)
+Q30 bases: 10253910529(94.2641%)
+Q40 bases: 10253910529(94.2641%)
+
+Read2 after filtering:
+total reads: 70250767
+total bases: 10880023779
+Q20 bases: 10741920869(98.7307%)
+Q30 bases: 10370896238(95.3205%)
+Q40 bases: 10370896238(95.3205%)
+
+Filtering result:
+reads passed filter: 140501534
+reads failed due to low quality: 2231148
+reads failed due to too many N: 23364
+reads failed due to too short: 219052
+reads with adapter trimmed: 16566016
+bases trimmed due to adapters: 450603941
+
+Duplication rate: 24.4835%
+
+Insert size peak (evaluated by paired-end reads): 171
+
+JSON report: outputs/fastp_reports/LB-HT-28s-HT-02_S2_L006_001.json
+HTML report: outputs/fastp_reports/LB-HT-28s-HT-02_S2_L006_001.html
+
+fastp --in1 data/LB-HT-28s-HT-02_S2_L006_R1_001.fastq.gz --in2 data/LB-HT-28s-HT-02_S2_L006_R2_001.fastq.gz --out1 data/trimmed/LB-HT-28s-HT-02_S2_L006_R1_001.fastq.gz --out2 data/trimmed/LB-HT-28s-HT-02_S2_L006_R2_001.fastq.gz --html outputs/fastp_reports/LB-HT-28s-HT-02_S2_L006_001.html --json outputs/fastp_reports/LB-HT-28s-HT-02_S2_L006_001.json --thread 4 --detect_adapter_for_pe 
+fastp v1.0.1, time used: 834 seconds

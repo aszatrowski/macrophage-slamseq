@@ -2,3 +2,4 @@
 .snakemake/
 data/
 outputs/fastqc_reports/
+outputs/fastp_reports/

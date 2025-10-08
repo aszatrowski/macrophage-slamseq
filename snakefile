@@ -31,7 +31,7 @@ rule fastqc:
         'outputs/fastqc_reports/{sample_id}_fastqc.html'
     resources: 
         slurm_account='pi-lbarreiro',
-        runtime=18
+        runtime=20
     shell: 
         """
         fastqc -o outputs/fastqc_reports/ -f fastq {input}
@@ -48,7 +48,7 @@ rule summarize_fastqc:
         fails_warnings = 'outputs/fastqc_summary/fastqc_fails_warnings.csv'
     resources: 
         slurm_account='pi-lbarreiro',
-        runtime='20'
+        runtime='30'
     script: "scripts/fastqc_summary.R"
 
 rule process_fastp:
@@ -67,7 +67,7 @@ rule process_fastp:
         extra = "--detect_adapter_for_pe"
     resources: 
         slurm_account='pi-lbarreiro',
-        runtime=30
+        runtime=60
     shell:
         """
         fastp \
