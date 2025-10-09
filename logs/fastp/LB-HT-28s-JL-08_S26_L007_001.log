@@ -49,5 +49,5 @@ Insert size peak (evaluated by paired-end reads): 171
 JSON report: outputs/fastp_reports/LB-HT-28s-JL-08_S26_L007_001.json
 HTML report: outputs/fastp_reports/LB-HT-28s-JL-08_S26_L007_001.html
 
-fastp --in1 data/LB-HT-28s-JL-08_S26_L007_R1_001.fastq.gz --in2 data/LB-HT-28s-JL-08_S26_L007_R2_001.fastq.gz --out1 data/trimmed/LB-HT-28s-JL-08_S26_L007_R1_001.fastq.gz --out2 data/trimmed/LB-HT-28s-JL-08_S26_L007_R2_001.fastq.gz --html outputs/fastp_reports/LB-HT-28s-JL-08_S26_L007_001.html --json outputs/fastp_reports/LB-HT-28s-JL-08_S26_L007_001.json --thread 4 --detect_adapter_for_pe 
-fastp v1.0.1, time used: 838 seconds
+fastp --in1 data/fastq_symlinks/LB-HT-28s-JL-08_S26_L007_R1_001.fastq.gz --in2 data/fastq_symlinks/LB-HT-28s-JL-08_S26_L007_R2_001.fastq.gz --out1 data/trimmed/LB-HT-28s-JL-08_S26_L007_R1_001.fastq.gz --out2 data/trimmed/LB-HT-28s-JL-08_S26_L007_R2_001.fastq.gz --html outputs/fastp_reports/LB-HT-28s-JL-08_S26_L007_001.html --json outputs/fastp_reports/LB-HT-28s-JL-08_S26_L007_001.json --thread 4 --detect_adapter_for_pe 
+fastp v1.0.1, time used: 863 seconds
