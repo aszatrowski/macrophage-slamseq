@@ -20,10 +20,9 @@ rule all:
             index_n = range(1, 9)
         ),
         expand(
-            'data/aligned_sam/{sample_id}_aligned.sam'
-            sample_id = sample_ids,
+            'data/aligned_bam/{sample_id}_aligned.bam',
+            sample_id = sample_ids
         )
-        
 
 rule process_fastp:
     input: # n is necessary so all parts have the same wildcards 
@@ -65,8 +64,8 @@ rule build_hisat3n_index:
         )
     resources: 
         slurm_account = 'pi-lbarreiro',
-        runtime = 60,
-        mem_mb = 24000,
+        runtime = 120,
+        mem_mb = 24000
     shell:  
         f"""
         hisat-3n-build \
@@ -89,16 +88,19 @@ rule align_hisat3n:
     threads: 8
     resources: 
         slurm_account = 'pi-lbarreiro',
-        runtime = 120
+        runtime = 120,
+        mem_mb = 24000
     shell: 
-        ("hisat-3n ")
-        ("-p {threads} ") # num threads
-        ("-x data/hisat3n_indexes/hg38 ")
-        ("--base-change T,C ")
-        ("--rna-strandness RF ") # not sure what this means, but it's in JL's pipeline
-        ("-q ") # for .fastq, not .fasta
-        ("-1 {input.fastq_r1} -2 {input.fastq_r2} ")
-        ("-S  {output.aligned_sam}")
+        (
+            "hisat-3n "
+            "-p {threads} " # num threads
+            "-x data/hisat3n_indexes/hg38 "
+            "--base-change T,C "
+            "--rna-strandness RF " # not sure what this means, but it's in JL's pipeline
+            "-q " # for .fastq, not .fasta
+            "-1 {input.fastq_r1} -2 {input.fastq_r2} "
+            "-S  {output.aligned_sam}"
+        )
 
 rule sam_to_bam:
     input: 
@@ -107,7 +109,8 @@ rule sam_to_bam:
         bamfile = "data/aligned_bam/{sample_id}_aligned.bam"
     resources: 
         slurm_account = 'pi-lbarreiro',
-        runtime = 10
+        runtime = 20,
+        mem_mb = 16000
     shell: 
         """
         samtools view -h -bS -F 260 {input.samfile} | samtools sort > {output.bamfile}
