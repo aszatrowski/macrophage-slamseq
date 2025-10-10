@@ -17,7 +17,7 @@ rule all:
         expand(
             'data/hisat3n_indexes/hg38.3n.{converted_bases}.{index_n}.ht2',
             converted_bases = ['CT', 'GA'], # using a C>T conversion + reverse complement
-            index_n = range(1, 9)
+            index_n = range(1, 9) # [1-8] indexes
         ),
         expand(
             'data/aligned_bam/{sample_id}_aligned.bam',
@@ -55,7 +55,7 @@ rule process_fastp:
 
 rule build_hisat3n_index:
     input: 
-        assembly = '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/GRCh38.primary_assembly.genome.fa'
+        assembly = '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/GRCh38.primary_assembly.genome.fa' # make variable
     output: 
         expand(
             'data/hisat3n_indexes/hg38.3n.{converted_bases}.{index_n}.ht2',
