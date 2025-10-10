@@ -43,7 +43,7 @@
 * Does what it says on the tin—converts `.sam` files from the previous step to `.bam`.
 * Generates lots of temp files to store data out-of-memory, assuming successful execution these should be cleaned up
     * I believe they persist if execution fails; unclear whether a restart can make use of them or just builds a new set
-* `.sam` files are then discarded
+* `.sam` files are then discarded because of `temp()` in previous rule
 
 ### Rulegraph:
 ![pipeline rulegraph](outputs/rulegraph_dag/rulegraph.png)
