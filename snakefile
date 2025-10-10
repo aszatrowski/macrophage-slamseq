@@ -84,34 +84,42 @@ rule align_hisat3n:
             index_n = range(1, 9)
         )
     output:
-        aligned_sam = 'data/aligned_sam/{sample_id}_aligned.sam'
-    threads: 8
+        temp(aligned_sam = 'data/aligned_sam_temp/{sample_id}_aligned.sam')
+    threads: 16
     resources: 
         slurm_account = 'pi-lbarreiro',
-        runtime = 120,
+        runtime = 180,
         mem_mb = 24000
     shell: 
         (
             "hisat-3n "
-            "-p {threads} " # num threads
-            "-x data/hisat3n_indexes/hg38 "
-            "--base-change T,C "
+            "-p {threads} " # num threads inherited from threads:
+            "-x data/hisat3n_indexes/hg38 " # hisat-3n index to align to
+            "--base-change T,C " # don't penalize T>C substitutions from SLAM-seq
             "--rna-strandness RF " # not sure what this means, but it's in JL's pipeline
             "-q " # for .fastq, not .fasta
-            "-1 {input.fastq_r1} -2 {input.fastq_r2} "
+            "-1 {input.fastq_r1} -2 {input.fastq_r2} " # r1 and r2 paired end files
             "-S  {output.aligned_sam}"
         )
 
 rule sam_to_bam:
     input: 
-        samfile = "data/aligned_sam/{sample_id}_aligned.sam"
+        samfile = "data/aligned_sam_temp/{sample_id}_aligned.sam"
     output: 
         bamfile = "data/aligned_bam/{sample_id}_aligned.bam"
+    threads: 4
     resources: 
         slurm_account = 'pi-lbarreiro',
-        runtime = 20,
+        runtime = 60,
         mem_mb = 16000
     shell: 
-        """
-        samtools view -h -bS -F 260 {input.samfile} | samtools sort > {output.bamfile}
-        """
+        (
+            "samtools view "
+            "--with-header " # with header
+            "--bam " # output to .bam; -S is meaningless legacy
+            "--exclude-flags 260 " # QC filter—excludes multimapped reads I believe
+            "-@ {threads} " # num threads inherited from threads:
+            "-T outputs/samtools/temp/ "
+            "{input.samfile} "
+            "| samtools sort > {output.bamfile}"
+        )
