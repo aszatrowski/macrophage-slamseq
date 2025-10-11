@@ -6,6 +6,11 @@
 * `slamseq_v1` is all (I think) the dependencies for Jesse's SLAM-seq pipeline
 * `slamseq_fastp` is all the dependencies plus fastp
 
+## Folders
+* `.snakemake`: under-the-hood metadata for DAG creation, plus execution (`log/`) and rule (`slurm_logs/`) log files
+* `data`: symlinks to raw `.fastq` data in Hannah's personal folder, plus all intermediate outputs and space for `samtools` temp files. Anything that is too large to be part of a GitHub repo, not human-readable, or isn't an interesting result goes in here
+* `outputs`: results, metadata, and QC summary folders. Of note, a _summary_ of the fastp checks go here, but individual reports go in `data`.
+
 ## Pipeline
 * `setup.sh` is a setup file (run before anything else) that loads the correct python version and conda environment for snakemake, its plugins (slurm executor and http) and all the packages.
 
