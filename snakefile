@@ -1,28 +1,29 @@
 import os
-storage:
+storage: # configure HTTP call to pre-built hg38 kallisto index
     provider="http",
     retrieve=False,
     keep_local=False
+kallisto_idx_path = 'https://github.com/pachterlab/kallisto-transcriptome-indices/releases/download/v1/human_index_nac.tar.xz'
 
+# path to lab's shared hg38 .fa index for hisat3n indexing
+assembly_path = '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/GRCh38.primary_assembly.genome.fa'
+# pi account for slurm
+slurm_account = 'pi-lbarreiro'
+
+# these are so lightweight that they can be run directly on login; no need for slurm
 localrules: decompress_kallisto_index_tar, wget_kallisto_index_tar
 
-slurm_account = 'pi-lbarreiro'
-assembly_path = '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/GRCh38.primary_assembly.genome.fa'
-kallisto_idx_path = 'https://github.com/pachterlab/kallisto-transcriptome-indices/releases/download/v1/human_index_nac.tar.xz'
-data_path = 'data'
 # sample_ids = [f.removesuffix('.fastq.gz') for f in os.listdir(data/') if f.endswith('.fastq.gz')]
 # sample_ids = ['LB-HT-28s-HT-10_S10_L007', 'LB-HT-28s-HT-02_S2_L006', 'LB-HT-28s-JL-08_S26_L007']
 sample_ids = ['LB-HT-28s-HT-10_S10_L007']
-n_tag = ['001']
 
 os.makedirs('data/samtools_temp', exist_ok=True) # for some reason samtools refuses to create its own dirs
 
 rule all:
     input: 
         expand(
-            "data/fastp_reports/{sample_id}_{n}.{filetype}",
+            "data/fastp_reports/{sample_id}_001.{filetype}",
             sample_id = sample_ids,
-            n = n_tag,
             filetype = ['html', 'json']
         ),
         expand(
@@ -40,16 +41,16 @@ rule all:
         )
 
 rule process_fastp:
-    input: # n is necessary so all parts have the same wildcards 
-        r1 = f'{data_path}/fastq_symlinks/{{sample_id}}_R1_{{n}}.fastq.gz',
-        r2 = f'{data_path}/fastq_symlinks/{{sample_id}}_R2_{{n}}.fastq.gz'
+    input: 
+        r1 = 'data/fastq_symlinks/{{sample_id}}_R1_001.fastq.gz',
+        r2 = 'data/fastq_symlinks/{{sample_id}}_R2_001.fastq.gz'
     output:
-        r1 = f'{data_path}/trimmed/{{sample_id}}_R1_{{n}}.fastq.gz',
-        r2 = f'{data_path}/trimmed/{{sample_id}}_R2_{{n}}.fastq.gz',
-        html = "data/fastp_reports/{sample_id}_{n}.html",
-        json = "data/fastp_reports/{sample_id}_{n}.json"
+        r1 = 'data/trimmed/{{sample_id}}_R1_001.fastq.gz',
+        r2 = 'data/trimmed/{{sample_id}}_R2_001.fastq.gz',
+        html = "data/fastp_reports/{sample_id}_001.html",
+        json = "data/fastp_reports/{sample_id}_001.json"
     log:
-        "logs/fastp/{sample_id}_{n}.log"
+        "logs/fastp/{sample_id}_001.log"
     threads: 4
     params:
         extra = "--detect_adapter_for_pe"
@@ -86,7 +87,7 @@ rule build_hisat3n_index:
         hisat-3n-build \
         --base-change T,C \
         {input.assembly} \
-        {data_path}/hisat3n_indexes/hg38 \
+        data/hisat3n_indexes/hg38 \
         """
     
 rule align_hisat3n:
