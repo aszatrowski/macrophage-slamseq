@@ -7,6 +7,7 @@
 * `slamseq_fastp` is all the dependencies plus fastp
 
 ## Pipeline
+* `setup.sh` is a setup file (run before anything else) that loads the correct python version and conda environment for snakemake, its plugins (slurm executor and http) and all the packages.
 
 ### Global inputs
 * `*.fastq.gz` compressed sequencing files
