@@ -54,7 +54,7 @@ rule process_fastp:
     threads: 4
     resources: 
         slurm_account = 'pi-lbarreiro',
-        runtime = 30
+        runtime = 15
     shell:
         (
             "fastp "
@@ -99,7 +99,7 @@ rule align_hisat3n:
         )
     output:
         aligned_sam = temp('data/aligned_sam_temp/{sample_id}_aligned.sam')
-    threads: 16
+    threads: 8
     resources: 
         slurm_account = 'pi-lbarreiro',
         runtime = 180,
