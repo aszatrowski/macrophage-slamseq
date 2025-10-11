@@ -1,7 +1,8 @@
 import os
 storage:
     provider="http",
-    retrieve=False
+    retrieve=False,
+    keep_local=False
 
 localrules: decompress_kallisto_index_tar, wget_kallisto_index_tar
 
@@ -9,7 +10,7 @@ slurm_account = 'pi-lbarreiro'
 assembly_path = '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/GRCh38.primary_assembly.genome.fa'
 kallisto_idx_path = 'https://github.com/pachterlab/kallisto-transcriptome-indices/releases/download/v1/human_index_nac.tar.xz'
 data_path = 'data'
-# sample_ids = [f.removesuffix('.fastq.gz') for f in os.listdir(f'{data_path}/') if f.endswith('.fastq.gz')]
+# sample_ids = [f.removesuffix('.fastq.gz') for f in os.listdir(data/') if f.endswith('.fastq.gz')]
 # sample_ids = ['LB-HT-28s-HT-10_S10_L007', 'LB-HT-28s-HT-02_S2_L006', 'LB-HT-28s-JL-08_S26_L007']
 sample_ids = ['LB-HT-28s-HT-10_S10_L007']
 n_tag = ['001']
@@ -19,7 +20,7 @@ os.makedirs('data/samtools_temp', exist_ok=True) # for some reason samtools refu
 rule all:
     input: 
         expand(
-            "outputs/fastp_reports/{sample_id}_{n}.{filetype}",
+            "data/fastp_reports/{sample_id}_{n}.{filetype}",
             sample_id = sample_ids,
             n = n_tag,
             filetype = ['html', 'json']
@@ -29,7 +30,12 @@ rule all:
             sample_id = sample_ids
         ),
         expand(
-            'outputs/kallisto/{sample_id}_counts.tsv',
+            'data/kallisto/{sample_id}/abundance.{ext}',
+            sample_id = sample_ids,
+            ext = ['tsv', 'h5']
+        ),
+        expand(
+            'data/kallisto/{sample_id}/run_info.json',
             sample_id = sample_ids
         )
 
@@ -40,8 +46,8 @@ rule process_fastp:
     output:
         r1 = f'{data_path}/trimmed/{{sample_id}}_R1_{{n}}.fastq.gz',
         r2 = f'{data_path}/trimmed/{{sample_id}}_R2_{{n}}.fastq.gz',
-        html = "outputs/fastp_reports/{sample_id}_{n}.html",
-        json = "outputs/fastp_reports/{sample_id}_{n}.json"
+        html = "data/fastp_reports/{sample_id}_{n}.html",
+        json = "data/fastp_reports/{sample_id}_{n}.json"
     log:
         "logs/fastp/{sample_id}_{n}.log"
     threads: 4
@@ -89,7 +95,7 @@ rule align_hisat3n:
         fastq_r2 = 'data/trimmed/{sample_id}_R2_001.fastq.gz',
         index = expand(
             'data/hisat3n_indexes/hg38.3n.{converted_bases}.{index_n}.ht2',
-            converted_bases = ['CT', 'GA'], # using a C>T conversion + reverse complement
+            converted_bases = ['CT', 'GA'], # using a T>C conversion + reverse complement
             index_n = range(1, 9)
         )
     output:
@@ -138,7 +144,7 @@ rule wget_kallisto_index_tar:
     input:
         path = storage.http('https://github.com/pachterlab/kallisto-transcriptome-indices/releases/download/v1/human_index_nac.tar.xz')
     output: 
-        kallisto_index_tar = 'data/homo_sapiens_kallisto_index.tar.xz'
+        kallisto_index_tar = temp('data/homo_sapiens_kallisto_index.tar.xz')
     shell:
         "wget -v -O {output.kallisto_index_tar} {input.path} "
 
@@ -159,19 +165,20 @@ rule kallisto_quant:
         fastq_r2 = 'data/trimmed/{sample_id}_R2_001.fastq.gz',
         kallisto_index = 'data/homo_sapiens_kallisto_index/index.idx'
     output:
-        kallisto_counts = 'outputs/kallisto/{sample_id}_counts.tsv'
-    threads: 4
+        kallisto_counts = 'data/kallisto/{sample_id}/abundance.tsv',
+        kallisto_h5 = 'data/kallisto/{sample_id}/abundance.h5',
+        kallisto_run_info = 'data/kallisto/{sample_id}/run_info.json'
+    threads: 5
     resources: 
         slurm_account = slurm_account,
-        runtime = 60,
-        mem_mb = 16000
+        runtime = 15,
+        mem_mb = 32000
     shell: 
         (
             "kallisto quant "
             "-i {input.kallisto_index} "
-            "-o {output.kallisto_counts} "
+            "-o data/kallisto/{wildcards.sample_id} "
             "{input.fastq_r1} {input.fastq_r2} "
-            "--plaintext " # output to human-readable .tsv not HDF5 binary
             "--threads {threads} "
             "--rf-stranded"
         )
