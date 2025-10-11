@@ -1,5 +1,6 @@
 .DS_Store
 .snakemake/
 data/
+tmp/
 outputs/fastqc_reports/
 outputs/fastp_reports/
