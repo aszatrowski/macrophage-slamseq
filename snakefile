@@ -12,7 +12,7 @@ slurm_account = 'pi-lbarreiro'
 
 # these are so lightweight that they can be run directly on the login node; no need for slurm
 # will want to add figure generation to this
-localrules: decompress_kallisto_index_tar, wget_kallisto_index_tar
+localrules: decompress_kallisto_index_tar, wget_kallisto_index_tar, generate_tagvalues_file
 # find all sample files in the folder, and remove _R1_001 & _R2_001 since paired-end reads will be processed together
 sample_ids = [f.removesuffix('_R1_001.fastq.gz').removesuffix('_R2_001.fastq.gz') 
               for f in os.listdir('data/fastq_symlinks') 
@@ -28,10 +28,6 @@ rule all:
             filetype = ['html', 'json']
         ),
         expand(
-            'data/aligned_bam/{sample_id}_aligned.bam',
-            sample_id = sample_ids
-        ),
-        expand(
             'data/kallisto/{sample_id}/abundance.{ext}',
             sample_id = sample_ids,
             ext = ['tsv', 'h5']
@@ -39,8 +35,11 @@ rule all:
         expand(
             'data/kallisto/{sample_id}/run_info.json',
             sample_id = sample_ids
-        )
-
+        ),
+        expand(
+            "data/nascent_counts/{sample_id}_nascent_counts.bam",
+            sample_id = sample_ids
+        ),
 rule process_fastp:
     input: 
         r1 = 'data/fastq_symlinks/{sample_id}_R1_001.fastq.gz',
@@ -172,7 +171,7 @@ rule kallisto_quant:
     resources: 
         slurm_account = slurm_account,
         runtime = 40,
-        mem_mb = "32G"
+        mem = "32G"
     shell: 
         (
             "kallisto quant "
@@ -181,4 +180,32 @@ rule kallisto_quant:
             "{input.fastq_r1} {input.fastq_r2} "
             "--threads {threads} "
             "--rf-stranded"
+        )
+
+rule generate_tagvalues_file:
+    output: 
+        tags = "data/tag_values.txt"
+    run: 
+        with open(output.tags, 'w') as f: # write sequence to .txt, one int per line
+            for i in range(2, 301):
+                f.write(f'{i}\n')
+
+rule count_nascent_transcripts:
+    input: 
+        bamfile = "data/aligned_bam/{sample_id}_aligned.bam",
+        tags = "data/tag_values.txt" # file with integers 2-300 against which samtools will match Yf:
+    output: 
+        nascent_counts = "data/nascent_counts/{sample_id}_nascent_counts.bam"
+    resources:
+        slurm_account = slurm_account,
+        runtime = 5,
+        mem = "8G"
+    shell: 
+        (
+            "samtools view "
+            "--with-header " 
+            "--bam "
+            "-F 260 " # exclude 260 field—multiple alignments
+            "-D Yf:{input.tags} " # only alignments with Yf: tag == STR where STR in input.tags
+            "{input.bamfile} > {output.nascent_counts}"
         )
