@@ -25,8 +25,6 @@
 
 #### `process_fastp`
 * Pulls in each sequencing file (R1 and R2 separately), and runs `fastp`, which **includes adapter trimming**
-* I have an extra `n_tag` wildcard with only a single value (`n_tag = ['001']`). This should be a constant in the filenames, but snakemake seemed to get confused because each _pair_ of R1/R2 `.fastq` files maps to one `html` and one `json`, and that fixes the issue.
-    * I will see if I can fix this.
 * Output: trimmed fastq sequence files, `html` report and `json` machine-readable metadata
     * saved in `data/trimmed/`
 
@@ -50,6 +48,12 @@
 * Generates lots of temp files to store data out-of-memory, assuming successful execution these should be cleaned up
     * I believe they persist if execution fails; unclear whether a restart can make use of them or just builds a new set
 * `.sam` files are then discarded because of `temp()` in previous rule
+
+#### `wget_kallisto_index`
+#### `decompress_kallisto_index`
+#### `kallisto_quant`
+#### `generate_tagvalues`
+#### `count_nascent_transcripts`
 
 ### Rulegraph:
 ![pipeline rulegraph](outputs/rulegraph_dag/rulegraph.png)
