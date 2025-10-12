@@ -11,11 +11,12 @@ assembly_path = '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/G
 slurm_account = 'pi-lbarreiro'
 
 # these are so lightweight that they can be run directly on the login node; no need for slurm
+# will want to add figure generation to this
 localrules: decompress_kallisto_index_tar, wget_kallisto_index_tar
 # find all sample files in the folder, and remove _R1_001 & _R2_001 since paired-end reads will be processed together
 sample_ids = [f.removesuffix('_R1_001.fastq.gz').removesuffix('_R2_001.fastq.gz') 
               for f in os.listdir('data/fastq_symlinks') 
-              if f.endswith('.fastq.gz')][0:5]
+              if f.endswith('.fastq.gz')][0:9]
 
 os.makedirs('data/samtools_temp', exist_ok=True) # for some reason samtools refuses to create its own dirs
 
@@ -54,7 +55,7 @@ rule process_fastp:
     threads: 4
     resources: 
         slurm_account = 'pi-lbarreiro',
-        runtime = 15
+        runtime = 30
     shell:
         (
             "fastp "
@@ -99,11 +100,11 @@ rule align_hisat3n:
         )
     output:
         aligned_sam = temp('data/aligned_sam_temp/{sample_id}_aligned.sam')
-    threads: 8
+    threads: 12
     resources: 
         slurm_account = 'pi-lbarreiro',
-        runtime = 180,
-        mem_mb = 24000
+        runtime = 210,
+        mem = "32G"
     shell: 
         (
             "hisat-3n "
@@ -124,8 +125,8 @@ rule sam_to_bam:
     threads: 4
     resources: 
         slurm_account = 'pi-lbarreiro',
-        runtime = 30, # can bring down to ~30
-        mem_mb = 16000
+        runtime = 45, # can bring down to ~30
+        mem = "16G"
     shell: 
         (
             "samtools view "
@@ -170,8 +171,8 @@ rule kallisto_quant:
     threads: 5
     resources: 
         slurm_account = slurm_account,
-        runtime = 15,
-        mem_mb = 32000
+        runtime = 40,
+        mem_mb = "32G"
     shell: 
         (
             "kallisto quant "
