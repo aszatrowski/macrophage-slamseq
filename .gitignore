@@ -2,5 +2,4 @@
 .snakemake/
 data/
 tmp/
-outputs/fastqc_reports/
-outputs/fastp_reports/
+outputs/multiqc_data/

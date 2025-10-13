@@ -12,11 +12,11 @@ slurm_account = 'pi-lbarreiro'
 
 # these are so lightweight that they can be run directly on the login node; no need for slurm
 # will want to add figure generation to this
-localrules: decompress_kallisto_index_tar, wget_kallisto_index_tar, generate_tagvalues_file
+localrules: decompress_kallisto_index_tar, wget_kallisto_index_tar, generate_tagvalues_file, multiqc
 # find all sample files in the folder, and remove _R1_001 & _R2_001 since paired-end reads will be processed together
 sample_ids = [f.removesuffix('_R1_001.fastq.gz').removesuffix('_R2_001.fastq.gz') 
               for f in os.listdir('data/fastq_symlinks') 
-              if f.endswith('.fastq.gz')][0:40]
+              if f.endswith('.fastq.gz')][0:9]
 
 os.makedirs('data/samtools_temp', exist_ok=True) # for some reason samtools refuses to create its own dirs
 
@@ -40,6 +40,7 @@ rule all:
             "data/nascent_counts/{sample_id}_nascent_counts.bam",
             sample_id = sample_ids
         ),
+        'outputs/multiqc_report.html'
 rule process_fastp:
     input: 
         r1 = 'data/fastq_symlinks/{sample_id}_R1_001.fastq.gz',
@@ -49,8 +50,6 @@ rule process_fastp:
         r2 = 'data/trimmed/{sample_id}_R2_001.fastq.gz',
         html = "data/fastp_reports/{sample_id}_001.html",
         json = "data/fastp_reports/{sample_id}_001.json"
-    log:
-        "logs/fastp/{sample_id}_001.log"
     threads: 4
     resources: 
         slurm_account = 'pi-lbarreiro',
@@ -64,7 +63,6 @@ rule process_fastp:
             "--json {output.json} "
             "--thread {threads} "
             "--detect_adapter_for_pe " # dynamically detect adapter sequences
-            "2> {log}"
         )
 
 rule build_hisat3n_index:
@@ -167,6 +165,8 @@ rule kallisto_quant:
         kallisto_counts = 'data/kallisto/{sample_id}/abundance.tsv',
         kallisto_h5 = 'data/kallisto/{sample_id}/abundance.h5',
         kallisto_run_info = 'data/kallisto/{sample_id}/run_info.json'
+    log:
+        'logs/kallisto_quant/{sample_id}_kallisto.log'
     threads: 5
     resources: 
         slurm_account = slurm_account,
@@ -179,7 +179,8 @@ rule kallisto_quant:
             "-o data/kallisto/{wildcards.sample_id} "
             "{input.fastq_r1} {input.fastq_r2} "
             "--threads {threads} "
-            "--rf-stranded"
+            "--rf-stranded "
+            "2> {log}"
         )
 
 rule generate_tagvalues_file:
@@ -208,4 +209,21 @@ rule count_nascent_transcripts:
             "-F 260 " # exclude 260 field—multiple alignments
             "-D Yf:{input.tags} " # only alignments with Yf: tag == STR where STR in input.tags
             "{input.bamfile} > {output.nascent_counts}"
+        )
+
+rule multiqc:
+    input: 
+        expand(
+            "data/fastp_reports/{sample_id}_001.{filetype}",
+            sample_id = sample_ids,
+            filetype = ['json']
+        ),
+    output: 
+        'outputs/multiqc_report.html'
+    shell: 
+        (
+            'multiqc '
+            'data/fastp_reports logs/kallisto_quant '
+            '--outdir outputs'
+            # future: --ignore-samples for ones that failed to process
         )
