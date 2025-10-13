@@ -16,7 +16,8 @@ localrules: decompress_kallisto_index_tar, wget_kallisto_index_tar, generate_tag
 # find all sample files in the folder, and remove _R1_001 & _R2_001 since paired-end reads will be processed together
 sample_ids = [f.removesuffix('_R1_001.fastq.gz').removesuffix('_R2_001.fastq.gz') 
               for f in os.listdir('data/fastq_symlinks') 
-              if f.endswith('.fastq.gz')][0:9]
+              if f.endswith('.fastq.gz')][0:40]
+print(len(sample_ids))
 
 os.makedirs('data/samtools_temp', exist_ok=True) # for some reason samtools refuses to create its own dirs
 
@@ -63,7 +64,7 @@ rule process_fastp:
             "--html {output.html} "
             "--json {output.json} "
             "--thread {threads} "
-            "--detect_adapter_for_pe "
+            "--detect_adapter_for_pe " # dynamically detect adapter sequences
             "2> {log}"
         )
 
