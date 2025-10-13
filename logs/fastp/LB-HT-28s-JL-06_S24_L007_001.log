@@ -1,0 +1,53 @@
+Detecting adapter sequence for read1...
+>Nextera_LMP_Read1_External_Adapter | >Illumina Multiplexing Index Sequencing Primer
+GATCGGAAGAGCACACGTCTGAACTCCAGTCAC
+
+Detecting adapter sequence for read2...
+>Illumina TruSeq Adapter Read 2
+AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
+
+Read1 before filtering:
+total reads: 66420627
+total bases: 10494459066
+Q20 bases: 10281141066(97.9673%)
+Q30 bases: 9792468044(93.3108%)
+Q40 bases: 9792468044(93.3108%)
+
+Read2 before filtering:
+total reads: 66420627
+total bases: 10494459066
+Q20 bases: 10215857206(97.3452%)
+Q30 bases: 9776179512(93.1556%)
+Q40 bases: 9776179512(93.1556%)
+
+Read1 after filtering:
+total reads: 65145235
+total bases: 9833659156
+Q20 bases: 9715817865(98.8017%)
+Q30 bases: 9336107561(94.9403%)
+Q40 bases: 9336107561(94.9403%)
+
+Read2 after filtering:
+total reads: 65145235
+total bases: 9835584889
+Q20 bases: 9734745982(98.9748%)
+Q30 bases: 9439844172(95.9764%)
+Q40 bases: 9439844172(95.9764%)
+
+Filtering result:
+reads passed filter: 130290470
+reads failed due to low quality: 1645328
+reads failed due to too many N: 59000
+reads failed due to too short: 846456
+reads with adapter trimmed: 24800249
+bases trimmed due to adapters: 993879952
+
+Duplication rate: 42.461%
+
+Insert size peak (evaluated by paired-end reads): 171
+
+JSON report: data/fastp_reports/LB-HT-28s-JL-06_S24_L007_001.json
+HTML report: data/fastp_reports/LB-HT-28s-JL-06_S24_L007_001.html
+
+fastp --in1 data/fastq_symlinks/LB-HT-28s-JL-06_S24_L007_R1_001.fastq.gz --in2 data/fastq_symlinks/LB-HT-28s-JL-06_S24_L007_R2_001.fastq.gz --out1 data/trimmed/LB-HT-28s-JL-06_S24_L007_R1_001.fastq.gz --out2 data/trimmed/LB-HT-28s-JL-06_S24_L007_R2_001.fastq.gz --html data/fastp_reports/LB-HT-28s-JL-06_S24_L007_001.html --json data/fastp_reports/LB-HT-28s-JL-06_S24_L007_001.json --thread 4 --detect_adapter_for_pe 
+fastp v1.0.1, time used: 749 seconds

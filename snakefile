@@ -17,7 +17,6 @@ localrules: decompress_kallisto_index_tar, wget_kallisto_index_tar, generate_tag
 sample_ids = [f.removesuffix('_R1_001.fastq.gz').removesuffix('_R2_001.fastq.gz') 
               for f in os.listdir('data/fastq_symlinks') 
               if f.endswith('.fastq.gz')][0:40]
-print(len(sample_ids))
 
 os.makedirs('data/samtools_temp', exist_ok=True) # for some reason samtools refuses to create its own dirs
 
