@@ -1,3 +1,4 @@
+## CONFIG:
 import os
 storage: # configure HTTP call to pre-built hg38 kallisto index
     provider="http",
@@ -13,13 +14,19 @@ slurm_account = 'pi-lbarreiro'
 # these are so lightweight that they can be run directly on the login node; no need for slurm
 # will want to add figure generation to this
 localrules: decompress_kallisto_index_tar, wget_kallisto_index_tar, generate_tagvalues_file, multiqc
+
+
+## CHOOSE FILES
 # find all sample files in the folder, and remove _R1_001 & _R2_001 since paired-end reads will be processed together
 sample_ids = [f.removesuffix('_R1_001.fastq.gz').removesuffix('_R2_001.fastq.gz') 
               for f in os.listdir('data/fastq_symlinks') 
               if f.endswith('.fastq.gz')][0:21]
 
-os.makedirs('data/samtools_temp', exist_ok=True) # for some reason samtools refuses to create its own dirs
+## OTHER USER-DEFINED SETTINGS
+substitutions_min = 2 # minimum T>C substitutions for a transcript to be called 'nascent'
 
+
+os.makedirs('data/samtools_temp', exist_ok=True) # for some reason samtools refuses to create its own dirs
 rule all:
     input: 
         expand(
@@ -188,7 +195,7 @@ rule generate_tagvalues_file:
         tags = "data/tag_values.txt"
     run: 
         with open(output.tags, 'w') as f: # write sequence to .txt, one int per line
-            for i in range(2, 301):
+            for i in range(substitutions_min, 301):
                 f.write(f'{i}\n')
 
 rule count_nascent_transcripts:
