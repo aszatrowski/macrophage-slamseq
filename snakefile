@@ -224,6 +224,7 @@ rule multiqc:
         (
             'multiqc '
             'data/fastp_reports logs/kallisto_quant '
+            '--force ' # overwrite existing report
             '--outdir outputs'
             # future: --ignore-samples for ones that failed to process
         )
