@@ -65,11 +65,21 @@
 * `.sam` files are then discarded because of `temp()` in previous rule
 
 #### `wget_kallisto_index`
-* Downloads a pre-built hg38 kallisto index from Pachter Lab's Github storage
+* Downloads a pre-built hg38 kallisto index in `.tar.xz` format from Pachter Lab's Github storage
 #### `decompress_kallisto_index`
+* Decompresses the index tarball
 #### `kallisto_quant`
+* Runs [kallisto](https://pachterlab.github.io/kallisto/) transcript quantification using their pseudoalignment algorithm
+* Returns a folder per `{sample_id}` containing `abundance.tsv` with transcript counts by ENST, `abundance.h5` (still not entirely sure what that is) and run metadata in `run_info.json`.
+* stdout is stored in a log file at `logs/{sample_id}_kallisto.log`.
+    * Of note, `multiqc` reads the log file for QC information, not `run_info.json`, which is dumb, especially because it doesn't read the log file correctly anyway (see below). Maybe there's a way to fix this.
 #### `generate_tagvalues`
+* `samtools view` counting requires string matching (per JL, it seems like there ought to be a better way), so this generates a `.txt` file containing the strings "2", "3", ..., "300" so it can call nascent transcripts.
 #### `count_nascent_transcripts`
+* Uses `samtools view` to read the `Yf:i:<str>` tag at the end of each transcript in `{sample_id}_aligned.bam`
+* `Yf:i:<str>` contains the number of specified (T>C) substitutions present in the transcript, as determined by `hisat-3n`.
+* If `<str>` appears in `tagvalues.txt` (from above), meaning the transcript contains ≥2 T>C substitutions, then that transcript is called as nascent
+    * Per JL, there are slightly more careful ways to do this involving corrections for true SNPs and incomplete 4sU conversion, but this is fine for now.
 #### `multiqc`
 * Reads `logs/{sample_id}_kallisto.log` and `data/fastp_reports/{sample_id}.json` to generate summary information.
 * kallisto runs in paired-end mode (R1 and R2 together) but for some reason `multiqc` only recognizes the `*_R1_001` filename in the log file, so it generates a separate entry. When reading **General Statistics** and the kallisto summary, assume the `_R1_001` data applies to the pair to which it belongs.
