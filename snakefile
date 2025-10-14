@@ -16,7 +16,7 @@ localrules: decompress_kallisto_index_tar, wget_kallisto_index_tar, generate_tag
 # find all sample files in the folder, and remove _R1_001 & _R2_001 since paired-end reads will be processed together
 sample_ids = [f.removesuffix('_R1_001.fastq.gz').removesuffix('_R2_001.fastq.gz') 
               for f in os.listdir('data/fastq_symlinks') 
-              if f.endswith('.fastq.gz')][0:9]
+              if f.endswith('.fastq.gz')][0:21]
 
 os.makedirs('data/samtools_temp', exist_ok=True) # for some reason samtools refuses to create its own dirs
 
@@ -213,6 +213,10 @@ rule count_nascent_transcripts:
 
 rule multiqc:
     input: 
+        expand(
+            "logs/kallisto_quant/{sample_id}_kallisto.log",
+            sample_id = sample_ids
+        ),
         expand(
             "data/fastp_reports/{sample_id}_001.{filetype}",
             sample_id = sample_ids,
