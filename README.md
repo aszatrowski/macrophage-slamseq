@@ -70,6 +70,9 @@
 #### `kallisto_quant`
 #### `generate_tagvalues`
 #### `count_nascent_transcripts`
+#### `multiqc`
+* Reads `logs/{sample_id}_kallisto.log` and `data/fastp_reports/{sample_id}.json` to generate summary information.
+* kallisto runs in paired-end mode (R1 and R2 together) but for some reason `multiqc` only recognizes the `*_R1_001` filename in the log file, so it generates a separate entry. When reading **General Statistics** and the kallisto summary, assume the `_R1_001` data applies to the pair to which it belongs.
 
 ### Rulegraph:
 ![pipeline rulegraph](outputs/rulegraph_dag/rulegraph.png)
