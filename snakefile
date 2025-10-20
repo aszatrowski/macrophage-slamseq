@@ -1,10 +1,5 @@
 ## CONFIG:
 import os
-storage: # configure HTTP call to pre-built hg38 kallisto index
-    provider="http",
-    retrieve=False,
-    keep_local=False
-kallisto_idx_path = 'https://github.com/pachterlab/kallisto-transcriptome-indices/releases/download/v1/human_index_nac.tar.xz'
 
 # path to lab's shared hg38 .fa index for hisat3n indexing
 assembly_path = '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/GRCh38.primary_assembly.genome.fa'
@@ -13,7 +8,7 @@ slurm_account = 'pi-lbarreiro'
 
 # these are so lightweight that they can be run directly on the login node; no need for slurm
 # will want to add figure generation to this
-localrules: decompress_kallisto_index_tar, wget_kallisto_index_tar, generate_tagvalues_file, multiqc
+localrules: generate_tagvalues_file, multiqc
 
 
 ## CHOOSE FILES
@@ -29,20 +24,6 @@ substitutions_min = 2 # minimum T>C substitutions for a transcript to be called 
 os.makedirs('data/samtools_temp', exist_ok=True) # for some reason samtools refuses to create its own dirs
 rule all:
     input: 
-        expand(
-            "data/fastp_reports/{sample_id}.{filetype}",
-            sample_id = sample_ids,
-            filetype = ['html', 'json']
-        ),
-        expand(
-            'data/kallisto/{sample_id}/abundance.{ext}',
-            sample_id = sample_ids,
-            ext = ['tsv', 'h5']
-        ),
-        expand(
-            'data/kallisto/{sample_id}/run_info.json',
-            sample_id = sample_ids
-        ),
         expand(
             "data/nascent_counts/{sample_id}_nascent_counts.bam",
             sample_id = sample_ids
@@ -144,52 +125,6 @@ rule sam_to_bam:
             "> {output.bamfile}"
         )
 
-rule wget_kallisto_index_tar:
-    input:
-        path = storage.http('https://github.com/pachterlab/kallisto-transcriptome-indices/releases/download/v1/human_index_nac.tar.xz')
-    output: 
-        kallisto_index_tar = temp('data/homo_sapiens_kallisto_index.tar.xz')
-    shell:
-        "wget -v -O {output.kallisto_index_tar} {input.path}"
-
-rule decompress_kallisto_index_tar:
-    input:
-        kallisto_index_tar = 'data/homo_sapiens_kallisto_index.tar.xz'
-    output: 
-        kallisto_cdna = 'data/homo_sapiens_kallisto_index/cdna.txt',
-        kallisto_index = 'data/homo_sapiens_kallisto_index/index.idx',
-        kallisto_nascent = 'data/homo_sapiens_kallisto_index/nascent.txt',
-        kallisto_t2g = 'data/homo_sapiens_kallisto_index/t2g.txt'
-    shell:
-        "tar -xvf {input.kallisto_index_tar} -C data/homo_sapiens_kallisto_index"
-
-rule kallisto_quant:
-    input:
-        fastq_r1 = 'data/trimmed/{sample_id}_R1_001.fastq.gz',
-        fastq_r2 = 'data/trimmed/{sample_id}_R2_001.fastq.gz',
-        kallisto_index = 'data/homo_sapiens_kallisto_index/index.idx'
-    output:
-        kallisto_counts = 'data/kallisto/{sample_id}/abundance.tsv',
-        kallisto_h5 = 'data/kallisto/{sample_id}/abundance.h5',
-        kallisto_run_info = 'data/kallisto/{sample_id}/run_info.json'
-    log:
-        'logs/kallisto_quant/{sample_id}_kallisto.log'
-    threads: 5
-    resources: 
-        slurm_account = slurm_account,
-        runtime = 40,
-        mem = "32G"
-    shell: 
-        (
-            "kallisto quant "
-            "-i {input.kallisto_index} "
-            "-o data/kallisto/{wildcards.sample_id} "
-            "{input.fastq_r1} {input.fastq_r2} "
-            "--threads {threads} "
-            "--rf-stranded "
-            "2> {log}"
-        )
-
 rule generate_tagvalues_file:
     output: 
         tags = "data/tag_values.txt"
@@ -225,7 +160,7 @@ rule multiqc:
             sample_id = sample_ids
         ),
         expand(
-            "data/fastp_reports/{sample_id}_001.{filetype}",
+            "data/fastp_reports/{sample_id}.{filetype}",
             sample_id = sample_ids,
             filetype = ['json']
         ),
@@ -234,7 +169,7 @@ rule multiqc:
     shell: 
         (
             'multiqc '
-            'data/fastp_reports logs/kallisto_quant '
+            'data/fastp_reports '
             '--force ' # overwrite existing report; otherwise it will attach a suffix that snakemake won't detect
             '--outdir outputs'
             # future: --ignore-samples for ones that failed to process
