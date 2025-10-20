@@ -20,7 +20,7 @@ localrules: decompress_kallisto_index_tar, wget_kallisto_index_tar, generate_tag
 # find all sample files in the folder, and remove _R1_001 & _R2_001 since paired-end reads will be processed together
 sample_ids = [f.removesuffix('_R1_001.fastq.gz').removesuffix('_R2_001.fastq.gz') 
               for f in os.listdir('data/fastq_symlinks') 
-              if f.endswith('.fastq.gz')][0:21]
+              if f.endswith('.fastq.gz')][0:2]
 
 ## OTHER USER-DEFINED SETTINGS
 substitutions_min = 2 # minimum T>C substitutions for a transcript to be called 'nascent'
@@ -30,7 +30,7 @@ os.makedirs('data/samtools_temp', exist_ok=True) # for some reason samtools refu
 rule all:
     input: 
         expand(
-            "data/fastp_reports/{sample_id}_001.{filetype}",
+            "data/fastp_reports/{sample_id}.{filetype}",
             sample_id = sample_ids,
             filetype = ['html', 'json']
         ),
@@ -55,8 +55,8 @@ rule process_fastp:
     output:
         r1 = 'data/trimmed/{sample_id}_R1_001.fastq.gz',
         r2 = 'data/trimmed/{sample_id}_R2_001.fastq.gz',
-        html = "data/fastp_reports/{sample_id}_001.html",
-        json = "data/fastp_reports/{sample_id}_001.json"
+        html = "data/fastp_reports/{sample_id}.html",
+        json = "data/fastp_reports/{sample_id}.json"
     threads: 4
     resources: 
         slurm_account = 'pi-lbarreiro',
@@ -235,7 +235,7 @@ rule multiqc:
         (
             'multiqc '
             'data/fastp_reports logs/kallisto_quant '
-            '--force ' # overwrite existing report
+            '--force ' # overwrite existing report; otherwise it will attach a suffix that snakemake won't detect
             '--outdir outputs'
             # future: --ignore-samples for ones that failed to process
         )
