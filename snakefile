@@ -18,9 +18,11 @@ localrules: generate_tagvalues_file, multiqc
 #               if f.endswith('.fastq.gz')][0:2]
 
 sample_ids = [
-    'LB-HT-28s-HT-17_S17_L007', # very smallest file (690B)
+    # 'LB-HT-28s-HT-17_S17_L007', # very smallest file (690B)
     'LB-HT-28s-HT-17_S17_L006', # third smallest (1.9K)
-    'LB-HT-28s-HT-18_S18_L008',# the smallest file >3GB
+    'LB-HT-28s-HT-17_S17_L005', # fourth smallest
+    'LB-HT-28s-HT-17_S17_L008' # fifth smallest
+    # 'LB-HT-28s-HT-18_S18_L008',# the smallest file >3GB
 ]
 
 ## OTHER USER-DEFINED SETTINGS
@@ -93,7 +95,7 @@ rule align_hisat3n:
     output:
         aligned_sam = temp('data/aligned_sam_temp/{sample_id}_aligned.sam')
     log:
-        "logs/hisat-3n/align_summary_{sample_id}.log"
+        "logs/hisat-3n/{sample_id}.log"
     threads: 8
     resources: 
         slurm_account = 'pi-lbarreiro',
@@ -167,20 +169,20 @@ rule count_nascent_transcripts:
 rule multiqc:
     input: 
         expand(
-            "logs/kallisto_quant/{sample_id}_kallisto.log",
-            sample_id = sample_ids
-        ),
-        expand(
             "data/fastp_reports/{sample_id}.{filetype}",
             sample_id = sample_ids,
             filetype = ['json']
+        ),
+        expand(
+            "logs/hisat-3n/align_summary_{sample_id}.log",
+            sample_id = sample_ids
         ),
     output: 
         'outputs/multiqc_report.html'
     shell: 
         (
             'multiqc '
-            'data/fastp_reports '
+            'data/fastp_reports logs/hisat-3n '
             '--force ' # overwrite existing report; otherwise it will attach a suffix that snakemake won't detect
             '--outdir outputs'
             # future: --ignore-samples for ones that failed to process
