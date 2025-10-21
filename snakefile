@@ -174,7 +174,7 @@ rule multiqc:
             filetype = ['json']
         ),
         expand(
-            "logs/hisat-3n/align_summary_{sample_id}.log",
+            "logs/hisat-3n/{sample_id}.log",
             sample_id = sample_ids
         ),
     output: 
