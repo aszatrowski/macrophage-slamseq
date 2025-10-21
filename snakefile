@@ -85,11 +85,13 @@ rule align_hisat3n:
         )
     output:
         aligned_sam = temp('data/aligned_sam_temp/{sample_id}_aligned.sam')
-    threads: 12
+    log:
+        "logs/hisat-3n/align_summary_{sample_id}.log"
+    threads: 4
     resources: 
         slurm_account = 'pi-lbarreiro',
-        runtime = 210,
-        mem = "32G"
+        runtime = 20,
+        mem = "16G"
     shell: 
         (
             "hisat-3n "
@@ -99,7 +101,9 @@ rule align_hisat3n:
             "--rna-strandness RF " # not sure what this means, but it's in JL's pipeline
             "-q " # for .fastq, not .fasta
             "-1 {input.fastq_r1} -2 {input.fastq_r2} " # r1 and r2 paired end files
-            "-S  {output.aligned_sam}"
+            "-S {output.aligned_sam} "
+            "--new-summary "
+            "--summary-file {log}"
         )
 
 rule sam_to_bam:
