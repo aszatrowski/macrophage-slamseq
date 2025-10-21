@@ -8,7 +8,7 @@ slurm_account = 'pi-lbarreiro'
 
 # these are so lightweight that they can be run directly on the login node; no need for slurm
 # will want to add figure generation to this
-localrules: generate_tagvalues_file, multiqc
+localrules: cat_fastqs, generate_tagvalues_file, multiqc
 
 
 ## CHOOSE FILES
@@ -18,12 +18,10 @@ localrules: generate_tagvalues_file, multiqc
 #               if f.endswith('.fastq.gz')][0:2]
 
 sample_ids = [
-    # 'LB-HT-28s-HT-17_S17_L007', # very smallest file (690B)
-    'LB-HT-28s-HT-17_S17_L006', # third smallest (1.9K)
-    'LB-HT-28s-HT-17_S17_L005', # fourth smallest
-    'LB-HT-28s-HT-17_S17_L008' # fifth smallest
-    # 'LB-HT-28s-HT-18_S18_L008',# the smallest file >3GB
+    'LB-HT-28s-HT-17_S17', # second smallest fileset (collectively R1 15GB + R2 14GB)
+    'LB-HT-28s-HT-18_S18'# smallest fileset (collectively R1 6.5KB + R2 6.4KB)
 ]
+LANES = [5, 6, 7, 8] # user-defined lanes
 
 ## OTHER USER-DEFINED SETTINGS
 substitutions_min = 2 # minimum T>C substitutions for a transcript to be called 'nascent'
@@ -37,10 +35,22 @@ rule all:
             sample_id = sample_ids
         ),
         'outputs/multiqc_report.html'
+
+rule cat_fastqs:
+    input: 
+        lambda wildcards: expand(
+            "data/fastq_symlinks/{{sample_id}}_L{seq_lane}_R{{end}}_001.fastq.gz",
+            seq_lane=[f"{l:03d}" for l in LANES]
+        )
+    output: 
+        'data/fastq_merged/{sample_id}_merged_R{end}_001.fastq.gz'
+    shell: 
+        "cat {input} > {output}"
+
 rule process_fastp:
     input: 
-        r1 = 'data/fastq_symlinks/{sample_id}_R1_001.fastq.gz',
-        r2 = 'data/fastq_symlinks/{sample_id}_R2_001.fastq.gz'
+        r1 = 'data/fastq_merged/{sample_id}_merged_R1_001.fastq.gz',
+        r2 = 'data/fastq_merged/{sample_id}_merged_R2_001.fastq.gz'
     output:
         r1 = 'data/trimmed/{sample_id}_R1_001.fastq.gz',
         r2 = 'data/trimmed/{sample_id}_R2_001.fastq.gz',
@@ -49,8 +59,8 @@ rule process_fastp:
     threads: 4
     resources: 
         slurm_account = 'pi-lbarreiro',
-        runtime = 30,
-        mem = "8G"
+        runtime = 60,
+        mem = "16G"
     shell:
         (
             "fastp "
@@ -96,11 +106,11 @@ rule align_hisat3n:
         aligned_sam = temp('data/aligned_sam_temp/{sample_id}_aligned.sam')
     log:
         "logs/hisat-3n/{sample_id}.log"
-    threads: 8
+    threads: 16
     resources: 
         slurm_account = 'pi-lbarreiro',
-        runtime = 120,
-        mem = "16G"
+        runtime = 180,
+        mem = "32G"
     shell: 
         (
             "hisat-3n "
