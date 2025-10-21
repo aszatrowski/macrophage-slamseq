@@ -13,15 +13,21 @@ localrules: generate_tagvalues_file, multiqc
 
 ## CHOOSE FILES
 # find all sample files in the folder, and remove _R1_001 & _R2_001 since paired-end reads will be processed together
-sample_ids = [f.removesuffix('_R1_001.fastq.gz').removesuffix('_R2_001.fastq.gz') 
-              for f in os.listdir('data/fastq_symlinks') 
-              if f.endswith('.fastq.gz')][0:2]
+# sample_ids = [f.removesuffix('_R1_001.fastq.gz').removesuffix('_R2_001.fastq.gz') 
+#               for f in os.listdir('data/fastq_symlinks') 
+#               if f.endswith('.fastq.gz')][0:2]
+
+sample_ids = [
+    'LB-HT-28s-HT-17_S17_L007', # very smallest file (690B)
+    'LB-HT-28s-HT-17_S17_L006', # third smallest (1.9K)
+    'LB-HT-28s-HT-18_S18_L008',# the smallest file >3GB
+]
 
 ## OTHER USER-DEFINED SETTINGS
 substitutions_min = 2 # minimum T>C substitutions for a transcript to be called 'nascent'
 
-
 os.makedirs('data/samtools_temp', exist_ok=True) # for some reason samtools refuses to create its own dirs
+
 rule all:
     input: 
         expand(
@@ -41,7 +47,8 @@ rule process_fastp:
     threads: 4
     resources: 
         slurm_account = 'pi-lbarreiro',
-        runtime = 30
+        runtime = 30,
+        mem = "8G"
     shell:
         (
             "fastp "
@@ -87,10 +94,10 @@ rule align_hisat3n:
         aligned_sam = temp('data/aligned_sam_temp/{sample_id}_aligned.sam')
     log:
         "logs/hisat-3n/align_summary_{sample_id}.log"
-    threads: 4
+    threads: 8
     resources: 
         slurm_account = 'pi-lbarreiro',
-        runtime = 20,
+        runtime = 120,
         mem = "16G"
     shell: 
         (
