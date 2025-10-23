@@ -45,14 +45,14 @@ rule cat_fastqs:
             seq_lane=[f"{l:03d}" for l in LANES]
         )
     output: 
-        'data/fastq_merged/{sample_id}_merged_R{end}_001.fastq.gz'
+        'data/fastq_merged/{sample_id}_R{end}_001.fastq.gz'
     shell: 
         "cat {input} > {output}"
 
 rule process_fastp:
     input: 
-        r1 = 'data/fastq_merged/{sample_id}_merged_R1_001.fastq.gz',
-        r2 = 'data/fastq_merged/{sample_id}_merged_R2_001.fastq.gz'
+        r1 = 'data/fastq_merged/{sample_id}_R1_001.fastq.gz',
+        r2 = 'data/fastq_merged/{sample_id}_R2_001.fastq.gz'
     output:
         r1 = 'data/trimmed/{sample_id}_R1_001.fastq.gz',
         r2 = 'data/trimmed/{sample_id}_R2_001.fastq.gz',
