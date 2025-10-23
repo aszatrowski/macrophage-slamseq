@@ -19,8 +19,9 @@ localrules: cat_fastqs, generate_tagvalues_file, multiqc
 #               if f.endswith('.fastq.gz')][0:2]
 
 sample_ids = [
-    # 'LB-HT-28s-HT-16_S16',
-    # 'LB-HT-28s-HT-17_S17', # second smallest fileset (collectively R1 15GB + R2 14GB)
+    'LB-HT-28s-HT-10_S10',
+    'LB-HT-28s-HT-16_S16',
+    'LB-HT-28s-HT-17_S17', # second smallest fileset (collectively R1 15GB + R2 14GB)
     'LB-HT-28s-HT-18_S18'# smallest fileset (collectively R1 6.5KB + R2 6.4KB)
 ]
 LANES = [5, 6, 7, 8] # user-defined sequencing lanes
@@ -111,10 +112,14 @@ rule align_hisat3n:
     threads: 24 # running: 24
     resources: 
         slurm_account = 'pi-lbarreiro',
-        runtime = 300, # running: 270
+        runtime = 540, # running: 270
         mem = "80G" # OOM'd at both 32 and 40 and 64. Hannah says just crank to 200GB and dw LOL
     shell: 
         (
+            "SCRATCH=/scratch/midway3/$USER/$SLURM_JOB_ID " # move the files to scratch; operations are heavily I/O limited
+            "mkdir -p $SCRATCH "
+            "cp input_R1.fastq.gz $SCRATCH/ "
+            "cp input_R2.fastq.gz $SCRATCH/ "
             "hisat-3n "
             "-p {threads} " # num threads inherited from threads:
             "-x data/hisat3n_indexes/hg38 " # hisat-3n index to align to
