@@ -114,8 +114,8 @@ rule align_hisat3n:
         # turns out these operations are MASSIVELY IO limited, so we'll copy everything to scratch, where it won't compete for RW access
         scratch = lambda wildcards: f"/scratch/midway3/$USER/{wildcards.sample_id}_$SLURM_JOB_ID"
     log:
-        report = "logs/hisat-3n/{sample_id}.report",
-        log = "logs/hisat-3n/{sample_id}.log"
+        qc = "logs/hisat-3n/qc/{sample_id}.log", # alignment quality
+        log = "logs/hisat-3n/logs/{sample_id}.log" # timestamped log file
     threads: 24
     resources:
         slurm_account = 'pi-lbarreiro',
@@ -146,7 +146,7 @@ rule align_hisat3n:
             --rna-strandness RF \
             -q \
             --new-summary \
-            --summary-file {log.report} \
+            --summary-file {log.qc} \
             2>> {log.log} | \
         samtools view -@ {params.samtools_threads} -b | \
         samtools sort -@ {params.samtools_threads} -o {params.scratch}/output.bam \
@@ -198,7 +198,7 @@ rule multiqc:
             filetype = ['json']
         ),
         expand(
-            "logs/hisat-3n/{sample_id}.log",
+            "logs/hisat-3n/qc/{sample_id}.log",
             sample_id = sample_ids
         ),
     output: 
@@ -206,7 +206,7 @@ rule multiqc:
     shell: 
         (
             'multiqc '
-            'data/fastp_reports logs/hisat-3n '
+            'data/fastp_reports logs/hisat-3n/qc '
             '--force ' # overwrite existing report; otherwise it will attach a suffix that snakemake won't detect
             '--outdir outputs'
             # future: --ignore-samples for ones that failed to process

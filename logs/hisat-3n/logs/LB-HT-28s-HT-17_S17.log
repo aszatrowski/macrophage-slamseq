@@ -1,0 +1,15 @@
+[2025-10-24 14:29:07] Copying inputs to local scratch...
+[2025-10-24 14:29:07] Starting alignment...
+HISAT2 summary stats:
+	Total pairs: 5
+		Aligned concordantly or discordantly 0 time: 3 (60.00%)
+		Aligned concordantly 1 time: 1 (20.00%)
+		Aligned concordantly >1 times: 1 (20.00%)
+		Aligned discordantly 1 time: 0 (0.00%)
+	Total unpaired reads: 6
+		Aligned 0 time: 5 (83.33%)
+		Aligned 1 time: 0 (0.00%)
+		Aligned >1 times: 1 (16.67%)
+	Overall alignment rate: 50.00%
+[2025-10-24 14:29:26] Copying output back...
+[2025-10-24 14:29:26] Alignment complete
