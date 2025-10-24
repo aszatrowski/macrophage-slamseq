@@ -45,7 +45,7 @@
 #### `build_hisat3n_index`
 * Builds a `hisat-3n` index fileset from a reference `.fa` genome file
 * I used the one in Barreiro lab's shared reference directory, seemed to work fine
-* Inserts C>T and complementary G>A substitutions in the genome to match the SLAMseq substitutions
+* Inserts T>C and complementary G>A substitutions in the genome to match the SLAMseq substitutions
 * Output: 16 total files
     * `data/hisat3n_indexes/hg38.3n.CT.[1-8].ht2`
     * `data/hisat3n_indexes/hg38.3n.GA.[1-8].ht2`

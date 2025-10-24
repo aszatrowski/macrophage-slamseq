@@ -1,0 +1,5 @@
+executor: slurm
+jobs: 2
+default-resources:
+  slurm_account: your_account_name  # if required
+  slurm_partition: lbarreiro  # or whatever your default partition is

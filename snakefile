@@ -19,10 +19,10 @@ localrules: cat_fastqs, generate_tagvalues_file, multiqc
 #               if f.endswith('.fastq.gz')][0:2]
 
 sample_ids = [
-    'LB-HT-28s-HT-10_S10',
-    'LB-HT-28s-HT-16_S16',
-    'LB-HT-28s-HT-17_S17', # second smallest fileset (collectively R1 15GB + R2 14GB)
-    'LB-HT-28s-HT-18_S18'# smallest fileset (collectively R1 6.5KB + R2 6.4KB)
+    # # 'LB-HT-28s-HT-10_S10',
+    # 'LB-HT-28s-HT-16_S16',
+    'LB-HT-28s-HT-17_S17',# smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test
+    # 'LB-HT-28s-HT-18_S18' # second smallest fileset (collectively R1 15GB + R2 14GB)
 ]
 LANES = [5, 6, 7, 8] # user-defined sequencing lanes
 
@@ -102,58 +102,65 @@ rule align_hisat3n:
         fastq_r2 = 'data/trimmed/{sample_id}_R2_001.fastq.gz',
         index = expand(
             'data/hisat3n_indexes/hg38.3n.{converted_bases}.{index_n}.ht2',
-            converted_bases = ['CT', 'GA'], # using a T>C conversion + reverse complement
-            index_n = range(1, 9)
+            converted_bases = ['CT', 'GA'], # T>C for SLAM-seq plus reverse complement
+            index_n = range(1, 9) # 9 total index files
         )
     output:
-        aligned_sam = temp('data/aligned_sam_temp/{sample_id}_aligned.sam')
+        aligned_bam = 'data/aligned_bam/{sample_id}_aligned.bam'
+    params:
+        index_prefix = 'data/hisat3n_indexes/hg38',
+        hisat_threads = 20,
+        samtools_threads = 4,
+        # turns out these operations are MASSIVELY IO limited, so we'll copy everything to scratch, where it won't compete for RW access
+        scratch = lambda wildcards: f"/scratch/midway3/$USER/{wildcards.sample_id}_$SLURM_JOB_ID"
     log:
-        "logs/hisat-3n/{sample_id}.log"
-    threads: 24 # running: 24
-    resources: 
+        report = "logs/hisat-3n/{sample_id}.report",
+        log = "logs/hisat-3n/{sample_id}.log"
+    threads: 24
+    resources:
         slurm_account = 'pi-lbarreiro',
-        runtime = 540, # running: 270
-        mem = "80G" # OOM'd at both 32 and 40 and 64. Hannah says just crank to 200GB and dw LOL
-    shell: 
-        (
-            "SCRATCH=/scratch/midway3/$USER/$SLURM_JOB_ID " # move the files to scratch; operations are heavily I/O limited
-            "mkdir -p $SCRATCH "
-            "cp input_R1.fastq.gz $SCRATCH/ "
-            "cp input_R2.fastq.gz $SCRATCH/ "
-            "hisat-3n "
-            "-p {threads} " # num threads inherited from threads:
-            "-x data/hisat3n_indexes/hg38 " # hisat-3n index to align to
-            "--base-change T,C " # don't penalize T>C substitutions from SLAM-seq
-            "--rna-strandness RF " # not sure what this means, but it's in JL's pipeline
-            "-q " # for .fastq, not .fasta
-            "-1 {input.fastq_r1} -2 {input.fastq_r2} " # r1 and r2 paired end files
-            "-S {output.aligned_sam} "
-            "--new-summary " # generate machine-readable summary for multiqc
-            "--summary-file {log}" # write to provided log file path
-        )
-
-rule sam_to_bam:
-    input: 
-        samfile = "data/aligned_sam_temp/{sample_id}_aligned.sam"
-    output: 
-        bamfile = "data/aligned_bam/{sample_id}_aligned.bam"
-    threads: 8
-    resources: 
-        slurm_account = 'pi-lbarreiro',
-        runtime = 90, # S18: 58min
-        mem = "16G"
-    shell: 
-        (
-            "samtools view "
-            "--with-header " # with header
-            "--bam " # output to .bam; -S is meaningless legacy
-            "--exclude-flags 260 " # QC filter—excludes multimapped reads I believe
-            "-@ {threads} " # num threads inherited from threads:
-            "{input.samfile} "
-            "| samtools sort " # pipe to samtools sort
-            "-T data/samtools_temp/ " # use the created directory for temp files (many and large, ew)
-            "> {output.bamfile}"
-        )
+        mem_mb = "60G",
+        runtime = 120  # 8 hours in minutes
+    shell:
+        """
+        # Create local scratch directory
+        mkdir -p {params.scratch}
+        
+        # Copy input files to local scratch
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying inputs to local scratch..." >> {log.log} 2>&1
+        cp {input.fastq_r1} {params.scratch}/ 2>> {log.log}
+        cp {input.fastq_r2} {params.scratch}/ 2>> {log.log}
+        
+        # Get basenames for local files
+        R1_BASE=$(basename {input.fastq_r1})
+        R2_BASE=$(basename {input.fastq_r2})
+        
+        # Run HISAT-3N and pipe directly to BAM
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting alignment..." >> {log.log} 2>&1
+        hisat-3n \
+            -x {params.index_prefix} \
+            -1 {params.scratch}/$R1_BASE \
+            -2 {params.scratch}/$R2_BASE \
+            -p {params.hisat_threads} \
+            --base-change T,C \
+            --rna-strandness RF \
+            -q \
+            --new-summary \
+            --summary-file {log.report} \
+            2>> {log.log} | \
+        samtools view -@ {params.samtools_threads} -b | \
+        samtools sort -@ {params.samtools_threads} -o {params.scratch}/output.bam \
+        2>> {log.log}
+        
+        # Copy result back
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying output back..." >> {log.log} 2>&1
+        cp {params.scratch}/output.bam {output.aligned_bam} 2>> {log.log}
+        
+        # Cleanup
+        rm -rf {params.scratch}
+        
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Alignment complete" >> {log.log} 2>&1
+        """
 
 rule generate_tagvalues_file:
     output: 
@@ -172,7 +179,7 @@ rule count_nascent_transcripts:
     resources:
         slurm_account = slurm_account,
         runtime = 5,
-        mem = "8G"
+        mem = "4G"
     shell: 
         (
             "samtools view "
