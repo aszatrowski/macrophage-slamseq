@@ -119,8 +119,8 @@ rule align_hisat3n:
     threads: 24
     resources:
         slurm_account = 'pi-lbarreiro',
-        mem_mb = "60G",
-        runtime = 120  # 8 hours in minutes
+        mem_mb = "80G",
+        runtime = 390   # 8 hours in minutes
     shell:
         """
         # Create local scratch directory
@@ -152,7 +152,7 @@ rule align_hisat3n:
         samtools sort -@ {params.samtools_threads} -o {params.scratch}/output.bam \
         2>> {log.log}
         
-        # Copy result back
+        # Copy result back to /project/
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying output back..." >> {log.log} 2>&1
         cp {params.scratch}/output.bam {output.aligned_bam} 2>> {log.log}
         
