@@ -22,7 +22,7 @@ sample_ids = [
     # # 'LB-HT-28s-HT-10_S10',
     # 'LB-HT-28s-HT-16_S16',
     'LB-HT-28s-HT-17_S17',# smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test
-    # 'LB-HT-28s-HT-18_S18' # second smallest fileset (collectively R1 15GB + R2 14GB)
+    'LB-HT-28s-HT-18_S18' # second smallest fileset (collectively R1 15GB + R2 14GB)
 ]
 LANES = [5, 6, 7, 8] # user-defined sequencing lanes
 

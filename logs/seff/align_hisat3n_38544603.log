@@ -1,0 +1,11 @@
+Job ID: 38544603
+Cluster: midway3
+User/Group: aszatrowski/aszatrowski
+State: COMPLETED (exit code 0)
+Nodes: 1
+Cores per node: 24
+CPU Utilized: 4-09:45:28
+CPU Efficiency: 80.25% of 5-11:47:36 core-walltime
+Job Wall-clock time: 05:29:29
+Memory Utilized: 53.76 GB
+Memory Efficiency: 67.20% of 80.00 GB
