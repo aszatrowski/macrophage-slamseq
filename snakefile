@@ -19,8 +19,8 @@ localrules: cat_fastqs, generate_tagvalues_file, multiqc
 #               if f.endswith('.fastq.gz')][0:2]
 
 sample_ids = [
-    # # 'LB-HT-28s-HT-10_S10',
-    # 'LB-HT-28s-HT-16_S16',
+    'LB-HT-28s-HT-10_S10',
+    'LB-HT-28s-HT-16_S16',
     'LB-HT-28s-HT-17_S17',# smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test
     'LB-HT-28s-HT-18_S18' # second smallest fileset (collectively R1 15GB + R2 14GB)
 ]
@@ -120,7 +120,7 @@ rule align_hisat3n:
     resources:
         slurm_account = 'pi-lbarreiro',
         mem_mb = "80G",
-        runtime = 390   # 8 hours in minutes
+        runtime = 600    # 10 hours in minutes
     shell:
         """
         # Create local scratch directory
