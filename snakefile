@@ -19,7 +19,7 @@ localrules: cat_fastqs, generate_tagvalues_file, multiqc
 #               if f.endswith('.fastq.gz')][0:2]
 
 sample_ids = [
-    'LB-HT-28s-HT-05_S5',
+    # 'LB-HT-28s-HT-05_S5', # EVIL EVIL EVIL. WHY DOES IT RUN SO SLOWLY???? # HE WHO EATS OUR PRECIOUS SUs
     'LB-HT-28s-HT-08_S8',
     'LB-HT-28s-HT-10_S10',
     'LB-HT-28s-HT-12_S12',
@@ -182,7 +182,7 @@ rule count_nascent_transcripts:
         nascent_counts = "data/nascent_counts/{sample_id}_nascent_counts.bam"
     resources:
         slurm_account = slurm_account,
-        runtime = 7,
+        runtime = 8,
         mem = "2G"
     shell: 
         (
