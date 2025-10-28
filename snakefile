@@ -19,10 +19,16 @@ localrules: cat_fastqs, generate_tagvalues_file, multiqc
 #               if f.endswith('.fastq.gz')][0:2]
 
 sample_ids = [
+    'LB-HT-28s-HT-05_S5',
+    'LB-HT-28s-HT-08_S8',
     'LB-HT-28s-HT-10_S10',
+    'LB-HT-28s-HT-12_S12',
     'LB-HT-28s-HT-16_S16',
-    'LB-HT-28s-HT-17_S17',# smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test
-    'LB-HT-28s-HT-18_S18' # second smallest fileset (collectively R1 15GB + R2 14GB)
+    'LB-HT-28s-HT-17_S17', # smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test
+    'LB-HT-28s-HT-18_S18', # second smallest fileset (collectively R1 15GB + R2 14GB)
+    'LB-HT-28s-JL-05_S23',
+    'LB-HT-28s-JL-06_S24',
+    'LB-HT-28s-JL-08_S26'
 ]
 LANES = [5, 6, 7, 8] # user-defined sequencing lanes
 
@@ -60,8 +66,8 @@ rule process_fastp:
     threads: 4
     resources: 
         slurm_account = 'pi-lbarreiro',
-        runtime = 60,
-        mem = "16G"
+        runtime = 75, # takes 45-50 min so far, adding a little buffer for bigger files
+        mem = "3G"
     shell:
         (
             "fastp "
@@ -118,7 +124,7 @@ rule align_hisat3n:
     resources:
         slurm_account = 'pi-lbarreiro',
         mem_mb = "80G",
-        runtime = 600    # 10 hours in minutes
+        runtime = 480    # 8 hours in minutes
     shell:
         """
         # Create local scratch directory
@@ -176,8 +182,8 @@ rule count_nascent_transcripts:
         nascent_counts = "data/nascent_counts/{sample_id}_nascent_counts.bam"
     resources:
         slurm_account = slurm_account,
-        runtime = 5,
-        mem = "4G"
+        runtime = 7,
+        mem = "2G"
     shell: 
         (
             "samtools view "

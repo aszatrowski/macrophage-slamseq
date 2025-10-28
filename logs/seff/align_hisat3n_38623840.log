@@ -1,0 +1,12 @@
+Job ID: 38623840
+Cluster: midway3
+User/Group: aszatrowski/aszatrowski
+State: RUNNING
+Nodes: 1
+Cores per node: 24
+CPU Utilized: 00:00:00
+CPU Efficiency: 0.00% of 14:06:00 core-walltime
+Job Wall-clock time: 00:35:15
+Memory Utilized: 0.00 MB (estimated maximum)
+Memory Efficiency: 0.00% of 80.00 GB (80.00 GB/node)
+WARNING: Efficiency statistics may be misleading for RUNNING jobs.

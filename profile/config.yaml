@@ -1,5 +1,5 @@
 executor: slurm
-jobs: 2
+jobs: 4
 default-resources:
-  slurm_account: your_account_name  # if required
-  slurm_partition: lbarreiro  # or whatever your default partition is
+  slurm_account: pi-lbarreiro
+  slurm_partition: caslake

@@ -1,0 +1,16 @@
+[2025-10-27 10:19:30] Copying inputs to local scratch...
+[2025-10-27 10:19:49] Starting alignment...
+HISAT2 summary stats:
+	Total pairs: 249069187
+		Aligned concordantly or discordantly 0 time: 39323143 (15.79%)
+		Aligned concordantly 1 time: 192191333 (77.16%)
+		Aligned concordantly >1 times: 17338238 (6.96%)
+		Aligned discordantly 1 time: 216473 (0.09%)
+	Total unpaired reads: 78646286
+		Aligned 0 time: 72651676 (92.38%)
+		Aligned 1 time: 4358261 (5.54%)
+		Aligned >1 times: 1636349 (2.08%)
+	Overall alignment rate: 85.42%
+[bam_sort_core] merging from 10 files and 4 in-memory blocks...
+[2025-10-27 15:01:46] Copying output back...
+[2025-10-27 15:02:02] Alignment complete
