@@ -29,8 +29,6 @@ LANES = [5, 6, 7, 8] # user-defined sequencing lanes
 ## OTHER USER-DEFINED SETTINGS
 substitutions_min = 2 # minimum T>C substitutions for a transcript to be called 'nascent'
 
-# for some reason samtools refuses to create its own dirs; this stores the large number of temp files samtools makes
-os.makedirs('data/samtools_temp', exist_ok=True)
 rule all:
     input: 
         expand(
