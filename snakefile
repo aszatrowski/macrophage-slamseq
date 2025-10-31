@@ -8,7 +8,7 @@ slurm_account = 'pi-lbarreiro'
 
 # these are so lightweight that they can be run directly on the login node; no need for slurm
 # will want to add figure generation to this
-localrules: cat_fastqs, generate_tagvalues_file, multiqc
+localrules: cat_fastqs, generate_tagvalues_file, wget_hg38_gtf, multiqc
 
 
 ## CHOOSE FILES
@@ -25,18 +25,18 @@ sample_ids = [
     'LB-HT-28s-HT-06_S6',
     'LB-HT-28s-HT-07_S7',
     'LB-HT-28s-HT-08_S8',
-    'LB-HT-28s-HT-09_S9',
+    # 'LB-HT-28s-HT-09_S9',
     'LB-HT-28s-HT-10_S10',
     'LB-HT-28s-HT-12_S12',
     'LB-HT-28s-HT-16_S16',
     'LB-HT-28s-HT-17_S17', # smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test
     'LB-HT-28s-HT-18_S18', # second smallest fileset (collectively R1 15GB + R2 14GB)
-    'LB-HT-28s-JL-01_S19', # also failed. EVIL.
+    # 'LB-HT-28s-JL-01_S19', # also failed. EVIL.
     'LB-HT-28s-JL-02_S20',
     'LB-HT-28s-JL-04_S22',
     'LB-HT-28s-JL-05_S23',
     'LB-HT-28s-JL-06_S24',
-    'LB-HT-28s-JL-07_S25',
+    # 'LB-HT-28s-JL-07_S25',
     'LB-HT-28s-JL-08_S26'
 ]
 LANES = [5, 6, 7, 8] # user-defined sequencing lanes
@@ -50,6 +50,7 @@ rule all:
             "data/nascent_counts/{sample_id}_nascent_counts.bam",
             sample_id = sample_ids
         ),
+        "data/ncbi_refseq_hg38.gz",
         'outputs/multiqc_report.html'
 
 rule cat_fastqs:
@@ -203,7 +204,22 @@ rule count_nascent_transcripts:
             "-D Yf:{input.tags} " # only alignments with Yf: tag == STR where STR in input.tags
             "{input.bamfile} > {output.nascent_counts}"
         )
-
+# import gtf file
+rule wget_hg38_gtf:
+    output: 
+        "data/ncbi_refseq_hg38.gz"
+    params:
+        refseq_path = "https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/genes/hg38.ncbiRefSeq.gtf.gz"
+    shell: 
+        (
+            "wget {params.refseq_path} "
+            "--output-document {output} "
+            "--force-directories "
+            "--show-progress "
+        )
+# featureCounts on nascent transcripts
+# featureCounts on all transcripts
+# R script for DEG over everything
 rule multiqc:
     input: 
         expand(
