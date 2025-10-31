@@ -1,7 +1,7 @@
 executor: slurm
 jobs: 2
 default-resources:
-  mail_user: aszatrowski@uchicago.edu
+  mail_user: aszatrowski
   mail_type: ALL
   slurm_account: pi-lbarreiro
   slurm_partition: lbarreiro

@@ -134,7 +134,7 @@ rule align_hisat3n:
         job_name = lambda wildcards: f"{wildcards.sample_id}_align_hisat3n",
         slurm_account = 'pi-lbarreiro',
         mem_mb = "96G",
-        runtime = 720    # 12 hours in minutes
+        runtime = 900    # 15 hours in minutes
     shell:
         """
         # Create local scratch directory
