@@ -21,20 +21,22 @@ localrules: cat_fastqs, generate_tagvalues_file, multiqc
 sample_ids = [
     # 'LB-HT-28s-HT-05_S5', # EVIL EVIL EVIL. WHY DOES IT RUN SO SLOWLY???? # HE WHO EATS OUR PRECIOUS SUs
     'LB-HT-28s-HT-02_S2',
-    # 'LB-HT-28s-HT-03_S3', # topped out the memory at 80GB
+    'LB-HT-28s-HT-03_S3', # topped out the memory at 80GB
     'LB-HT-28s-HT-06_S6',
+    'LB-HT-28s-HT-07_S7',
     'LB-HT-28s-HT-08_S8',
+    'LB-HT-28s-HT-09_S9',
     'LB-HT-28s-HT-10_S10',
     'LB-HT-28s-HT-12_S12',
     'LB-HT-28s-HT-16_S16',
     'LB-HT-28s-HT-17_S17', # smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test
     'LB-HT-28s-HT-18_S18', # second smallest fileset (collectively R1 15GB + R2 14GB)
-    # 'LB-HT-28s-JL-01_S19', # also failed. EVIL.
+    'LB-HT-28s-JL-01_S19', # also failed. EVIL.
     'LB-HT-28s-JL-02_S20',
     'LB-HT-28s-JL-04_S22',
     'LB-HT-28s-JL-05_S23',
     'LB-HT-28s-JL-06_S24',
-    # 'LB-HT-28s-JL-07_S25',
+    'LB-HT-28s-JL-07_S25',
     'LB-HT-28s-JL-08_S26'
 ]
 LANES = [5, 6, 7, 8] # user-defined sequencing lanes
@@ -57,7 +59,7 @@ rule cat_fastqs:
             seq_lane=[f"{l:03d}" for l in LANES]
         )
     output: 
-        'data/fastq_merged/{sample_id}_R{end}_001.fastq.gz'
+        temp('data/fastq_merged/{sample_id}_R{end}_001.fastq.gz')
     shell: 
         "cat {input} > {output}"
 
@@ -66,8 +68,8 @@ rule process_fastp:
         r1 = 'data/fastq_merged/{sample_id}_R1_001.fastq.gz',
         r2 = 'data/fastq_merged/{sample_id}_R2_001.fastq.gz'
     output:
-        r1 = 'data/trimmed/{sample_id}_R1_001.fastq.gz',
-        r2 = 'data/trimmed/{sample_id}_R2_001.fastq.gz',
+        r1 = temp('data/trimmed/{sample_id}_R1_001.fastq.gz'),
+        r2 = temp('data/trimmed/{sample_id}_R2_001.fastq.gz'),
         html = "data/fastp_reports/{sample_id}.html",
         json = "data/fastp_reports/{sample_id}.json"
     threads: 4
@@ -129,9 +131,10 @@ rule align_hisat3n:
         log = "logs/hisat-3n/logs/{sample_id}.log" # timestamped log file
     threads: 24
     resources:
+        job_name = lambda wildcards: f"{wildcards.sample_id}_align_hisat3n",
         slurm_account = 'pi-lbarreiro',
-        mem_mb = "85G",
-        runtime = 480    # 8 hours in minutes
+        mem_mb = "96G",
+        runtime = 720    # 12 hours in minutes
     shell:
         """
         # Create local scratch directory
