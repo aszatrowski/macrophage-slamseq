@@ -1,7 +1,7 @@
 executor: slurm
-jobs: 2
+jobs: 8
 default-resources:
-  mail_user: aszatrowski
+  mail_user: aszatrowski@rcc.uchicago.edu
   mail_type: ALL
   slurm_account: pi-lbarreiro
   slurm_partition: lbarreiro

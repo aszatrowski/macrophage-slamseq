@@ -29,7 +29,7 @@ sample_ids = [
     'LB-HT-28s-HT-10_S10',
     'LB-HT-28s-HT-12_S12',
     'LB-HT-28s-HT-16_S16',
-    'LB-HT-28s-HT-17_S17', # smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test
+    # 'LB-HT-28s-HT-17_S17', # smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test BUT has no nascent transcripts and fails featureCounts
     'LB-HT-28s-HT-18_S18', # second smallest fileset (collectively R1 15GB + R2 14GB)
     # 'LB-HT-28s-JL-01_S19', # also failed. EVIL.
     'LB-HT-28s-JL-02_S20',
@@ -50,7 +50,12 @@ rule all:
             "data/nascent_counts/{sample_id}_nascent_counts.bam",
             sample_id = sample_ids
         ),
-        "data/ncbi_refseq_hg38.gz",
+        expand(
+            "data/featurecounts/{type}/{sample_id}.{ext}",
+            sample_id = sample_ids,
+            type = ["all", "nascent"],
+            ext = ["txt", "txt.summary"]
+        ),
         'outputs/multiqc_report.html'
 
 rule cat_fastqs:
@@ -218,6 +223,30 @@ rule wget_hg38_gtf:
             "--show-progress "
         )
 # featureCounts on nascent transcripts
+rule featureCounts_nascent:
+    input: 
+        annotation = "data/ncbi_refseq_hg38.gz",
+        nascent_counts = "data/nascent_counts/{sample_id}_nascent_counts.bam"
+    output: 
+        gene_counts = "data/featurecounts/nascent/{sample_id}.txt",
+        summary = "data/featurecounts/nascent/{sample_id}.txt.summary"
+    threads: 2
+    resources: 
+        slurm_account = 'pi-lbarreiro',
+        runtime = 5,
+        mem = "1G"
+    shell: 
+        (
+            "featureCounts "
+            "-t exon "
+            "-g gene_id "
+            "-a {input.annotation} "
+            "-p --countReadPairs " # paired-end sequencing
+            "-T {threads} "
+            # "-f gtf "
+            "-o {output.gene_counts} "
+            "{input.nascent_counts} "
+        )
 # featureCounts on all transcripts
 # R script for DEG over everything
 rule multiqc:
@@ -231,12 +260,17 @@ rule multiqc:
             "logs/hisat-3n/qc/{sample_id}.log",
             sample_id = sample_ids
         ),
+        expand(
+            "data/featurecounts/{type}/{sample_id}.txt.summary",
+            type = ["nascent", "all"],
+            sample_id = sample_ids
+        ),
     output: 
         'outputs/multiqc_report.html'
     shell: 
         (
             'multiqc '
-            'data/fastp_reports logs/hisat-3n/qc '
+            'data/fastp_reports logs/hisat-3n/qc data/featurecounts/nascent/ ' # switch these to ALL for consistency in multiqc
             '--force ' # overwrite existing report; otherwise it will attach a suffix that snakemake won't detect
             '--outdir outputs'
             # future: --ignore-samples for ones that failed to process
