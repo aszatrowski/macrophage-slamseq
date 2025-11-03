@@ -1,5 +1,5 @@
 executor: slurm
-jobs: 8
+jobs: 2
 default-resources:
   mail_user: aszatrowski@rcc.uchicago.edu
   mail_type: ALL
