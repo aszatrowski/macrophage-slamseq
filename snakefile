@@ -19,7 +19,7 @@ localrules: cat_fastqs, generate_tagvalues_file, wget_hg38_gtf, multiqc
 #               if f.endswith('.fastq.gz')][0:2]
 
 sample_ids = [
-    'LB-HT-28s-HT-01_S1', # topped out the memory at 80GB. but runs now!
+    'LB-HT-28s-HT-01_S1',
     'LB-HT-28s-HT-02_S2',
     'LB-HT-28s-HT-03_S3', # topped out the memory at 80GB. but runs now!
     'LB-HT-28s-HT-05_S5', # EVIL EVIL EVIL. WHY DOES IT RUN SO SLOWLY???? # HE WHO EATS OUR PRECIOUS SUs
@@ -32,7 +32,7 @@ sample_ids = [
     'LB-HT-28s-HT-16_S16',
     # 'LB-HT-28s-HT-17_S17', # smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test BUT has no nascent transcripts and fails featureCounts
     'LB-HT-28s-HT-18_S18', # second smallest fileset (collectively R1 15GB + R2 14GB)
-    'LB-HT-28s-JL-01_S19', # also failed. EVIL.
+    # 'LB-HT-28s-JL-01_S19', # also failed. EVIL. EVEN AFTER 20HOURS??
     'LB-HT-28s-JL-02_S20',
     'LB-HT-28s-JL-04_S22',
     'LB-HT-28s-JL-05_S23',
@@ -138,7 +138,7 @@ rule align_hisat3n:
         job_name = lambda wildcards: f"{wildcards.sample_id}_align_hisat3n",
         slurm_account = 'pi-lbarreiro',
         mem_mb = "96G",
-        runtime = 1200    # 20 hours in minutes # please let this be enough
+        runtime = 1440    # 24 hours in minutes # please let this be enough
     shell:
         """
         # Create local scratch directory
