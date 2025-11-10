@@ -8,7 +8,7 @@ slurm_account = 'pi-lbarreiro'
 
 # these are so lightweight that they can be run directly on the login node; no need for slurm
 # will want to add figure generation to this
-localrules: cat_fastqs, generate_tagvalues_file, wget_hg38_gtf, multiqc
+localrules: cat_fastqs, multiqc
 
 
 ## CHOOSE FILES
@@ -19,27 +19,27 @@ localrules: cat_fastqs, generate_tagvalues_file, wget_hg38_gtf, multiqc
 #               if f.endswith('.fastq.gz')][0:2]
 
 sample_ids = [
-    'LB-HT-28s-HT-01_S1',
-    'LB-HT-28s-HT-02_S2',
-    'LB-HT-28s-HT-03_S3', # topped out the memory at 80GB. but runs now!
-    'LB-HT-28s-HT-05_S5', # EVIL EVIL EVIL. WHY DOES IT RUN SO SLOWLY???? # HE WHO EATS OUR PRECIOUS SUs
+    # 'LB-HT-28s-HT-01_S1',
+    # 'LB-HT-28s-HT-02_S2',
+    # 'LB-HT-28s-HT-03_S3', # topped out the memory at 80GB. but runs now!
+    # 'LB-HT-28s-HT-05_S5', # EVIL EVIL EVIL. WHY DOES IT RUN SO SLOWLY???? # HE WHO EATS OUR PRECIOUS SUs
     'LB-HT-28s-HT-06_S6',
-    'LB-HT-28s-HT-07_S7',
-    'LB-HT-28s-HT-08_S8',
-    'LB-HT-28s-HT-09_S9',
+    # 'LB-HT-28s-HT-07_S7',
+    # 'LB-HT-28s-HT-08_S8',
+    # 'LB-HT-28s-HT-09_S9',
     'LB-HT-28s-HT-10_S10',
     'LB-HT-28s-HT-12_S12',
     'LB-HT-28s-HT-16_S16',
-    # 'LB-HT-28s-HT-17_S17', # smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test BUT has no nascent transcripts and fails featureCounts
+    'LB-HT-28s-HT-17_S17', # smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test BUT has no nascent transcripts and fails featureCounts
     'LB-HT-28s-HT-18_S18', # second smallest fileset (collectively R1 15GB + R2 14GB)
     # 'LB-HT-28s-JL-01_S19', # also failed. EVIL. EVEN AFTER 20HOURS??
     'LB-HT-28s-JL-02_S20',
     'LB-HT-28s-JL-04_S22',
     'LB-HT-28s-JL-05_S23',
-    'LB-HT-28s-JL-06_S24',
-    'LB-HT-28s-JL-07_S25',
-    'LB-HT-28s-JL-08_S26',
-    'LB-HT-28s-JL-09_S27'
+    # 'LB-HT-28s-JL-06_S24',
+    # 'LB-HT-28s-JL-07_S25',
+    # 'LB-HT-28s-JL-08_S26',
+    # 'LB-HT-28s-JL-09_S27'
 ]
 LANES = [5, 6, 7, 8]
 ## OTHER USER-DEFINED SETTINGS
@@ -48,11 +48,8 @@ substitutions_min = 2 # minimum T>C substitutions for a transcript to be called 
 rule all:
     input: 
         expand(
-            "data/featurecounts/{type}/{sample_id}.{ext}",
-            sample_id = sample_ids,
-            # type = ["all", "nascent"],
-            type = ["nascent"],
-            ext = ["tsv", "tsv.summary"]
+            "data/md_tagged/{sample_id}.bam",
+            sample_id = sample_ids
         ),
         'outputs/multiqc_report.html'
 
@@ -180,33 +177,49 @@ rule align_hisat3n:
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Alignment complete" >> {log.log} 2>&1
         """
 
-rule generate_tagvalues_file:
-    output: 
-        tags = "data/tag_values.txt"
-    run: 
-        with open(output.tags, 'w') as f: # write sequence to .txt, one int per line
-            for i in range(substitutions_min, 301):
-                f.write(f'{i}\n')
-
-rule count_nascent_transcripts:
-    input: 
-        bamfile = "data/aligned_bam/{sample_id}_aligned.bam",
-        tags = "data/tag_values.txt" # file with integers 2-300 against which samtools will match Yf:
-    output: 
-        nascent_counts = "data/nascent_counts/{sample_id}_nascent_counts.bam"
+rule add_md_tags:
+    input:
+        bam = "data/aligned_bam/{sample_id}_aligned.bam",
+        fasta = assembly_path
+    output:
+        bam = "data/md_tagged/{sample_id}.bam",
+        bai = "data/md_tagged/{sample_id}.bam.bai"
     resources:
         slurm_account = slurm_account,
-        runtime = 8,
-        mem = "2G"
-    shell: 
-        (
-            "samtools view "
-            "--with-header " 
-            "--bam "
-            "-F 260 " # exclude 260 field—multiple alignments
-            "-D Yf:{input.tags} " # only alignments with Yf: tag == STR where STR in input.tags
-            "{input.bamfile} > {output.nascent_counts}"
-        )
+        slurm_partition = 'caslake',
+        runtime = 120,
+        mem = "12G"
+    threads: 8
+    params:
+        scratch = lambda wildcards: f"/scratch/midway3/$USER/{wildcards.sample_id}_$SLURM_JOB_ID",
+    shell:
+        """
+        mkdir -p {params.scratch}
+        
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying inputs to local scratch..."
+        cp {input.bam} {params.scratch}/ 2>> {params.scratch}/samtools.log
+        cp {input.fasta} {params.scratch}/ 2>> {params.scratch}/samtools.log
+
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting tagging..."
+        # get basename 
+        BASE=$(basename {input.bam})
+        BASE_FA=$(basename {input.fasta})
+        
+        # run samtools on scratch-copied file, using scratch path and basename
+        samtools calmd -b {params.scratch}/$BASE {params.scratch}/$BASE_FA 2> {params.scratch}/samtools.log | \
+        samtools sort -@ {threads} -o {params.scratch}/output.bam 2>> {params.scratch}/samtools.log
+        samtools index {params.scratch}/output.bam 2>> {params.scratch}/samtools.log
+
+        # Copy result back to /project/
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying output back..."
+        cp {params.scratch}/output.bam {output.bam} 2>> {params.scratch}/samtools.log
+        cp {params.scratch}/output.bam.bai {output.bai} 2>> {params.scratch}/samtools.log
+        
+
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Tagging complete."
+        # clean up
+        rm -rf {params.scratch}
+        """
 
 rule multiqc:
     input: 
