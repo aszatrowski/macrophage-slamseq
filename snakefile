@@ -232,18 +232,12 @@ rule multiqc:
             "logs/hisat-3n/qc/{sample_id}.log",
             sample_id = sample_ids
         ),
-        expand(
-            "data/featurecounts/{type}/{sample_id}.tsv.summary",
-            # type = ["nascent", "all"],
-            type = ["nascent"],
-            sample_id = sample_ids
-        ),
     output: 
         'outputs/multiqc_report.html'
     shell: 
         (
             'multiqc '
-            'data/fastp_reports logs/hisat-3n/qc data/featurecounts/nascent/ ' # switch these to ALL for consistency in multiqc
+            'data/fastp_reports logs/hisat-3n/qc ' # switch these to ALL for consistency in multiqc
             '--force ' # overwrite existing report; otherwise it will attach a suffix that snakemake won't detect
             '--outdir outputs'
             # future: --ignore-samples for ones that failed to process
