@@ -42,8 +42,6 @@ sample_ids = [
     # 'LB-HT-28s-JL-09_S27'
 ]
 LANES = [5, 6, 7, 8]
-## OTHER USER-DEFINED SETTINGS
-substitutions_min = 2 # minimum T>C substitutions for a transcript to be called 'nascent'
 
 rule all:
     input: 
