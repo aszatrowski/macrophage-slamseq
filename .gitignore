@@ -1,5 +1,6 @@
 .DS_Store
 .snakemake/
+.gedi/
 data/
 tmp/
 outputs/multiqc_data/

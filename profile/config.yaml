@@ -1,7 +1,9 @@
 executor: slurm
 jobs: 4
+use-singularity: true # activate singularity for container:
+singularity-args: "--bind /project/lbarreiro" # give container access to all of lbarreiro
 default-resources:
-  mail_user: aszatrowski@rcc.uchicago.edu
-  mail_type: ALL
-  slurm_account: pi-lbarreiro
-  slurm_partition: lbarreiro
+  mail_user: aszatrowski@rcc.uchicago.edu 
+  mail_type: ALL # email me, or don't, as seems to be your preference
+  slurm_account: pi-lbarreiro # bill Luis
+  slurm_partition: lbarreiro # don't bill Luis

@@ -1,14 +1,17 @@
 ## CONFIG:
 import os
 
-# path to lab's shared hg38 .fa index for hisat3n indexing
+# path to lab's shared hg38 .fa index for hisat3n and GEDI indexing
 assembly_path = '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/GRCh38.primary_assembly.genome.fa'
+data_path = '/project/lbarreiro/DATA/SLAM-seq/pilot_2025.08.19'
+container_path = '/project/lbarreiro/USERS/austin/containers/gedi_1.0.6a.sif'
 # pi account for slurm
 slurm_account = 'pi-lbarreiro'
 
+GEDI_INDEX_DIR = 'data/gedi_indexes'
 # these are so lightweight that they can be run directly on the login node; no need for slurm
 # will want to add figure generation to this
-localrules: cat_fastqs, multiqc
+localrules: cat_fastqs, wget_hg38_gtf, multiqc, gedi_index_genome
 
 
 ## CHOOSE FILES
@@ -49,12 +52,23 @@ rule all:
             "data/md_tagged/{sample_id}.bam",
             sample_id = sample_ids
         ),
+        expand(
+            [
+                f'{GEDI_INDEX_DIR}/{{input_basename}}.genes.tab',
+                f'{GEDI_INDEX_DIR}/{{input_basename}}.index.cit',
+                f'{GEDI_INDEX_DIR}/{{input_basename}}.transcripts.fasta',
+                f'{GEDI_INDEX_DIR}/{{input_basename}}.transcripts.fi',
+                f'{GEDI_INDEX_DIR}/{{input_basename}}.transcripts.tab',
+                f'{GEDI_INDEX_DIR}/{{input_basename}}_metadata.oml'
+            ],
+            input_basename = ['ncbi_refseq_hg38.gtf']
+        ),
         'outputs/multiqc_report.html'
 
 rule cat_fastqs:
     input: 
         lambda wildcards: expand(
-            "data/fastq_symlinks/{{sample_id}}_L{seq_lane}_R{{end}}_001.fastq.gz",
+            f"{data_path}/{{sample_id}}_L{seq_lane}_R{{end}}_001.fastq.gz",
             seq_lane=[f"{l:03d}" for l in LANES]
         )
     output: 
@@ -217,6 +231,49 @@ rule add_md_tags:
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Tagging complete."
         # clean up
         rm -rf {params.scratch}
+        """
+
+rule wget_hg38_gtf:
+    output: 
+        "data/ncbi_refseq_hg38/ncbi_refseq_hg38.gtf.gz"
+    params:
+        refseq_path = "https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/genes/hg38.ncbiRefSeq.gtf.gz"
+    shell: 
+        (
+            "wget {params.refseq_path} "
+            "--output-document {output} "
+            "--force-directories "
+            "--show-progress "
+        )
+
+rule gedi_index_genome:
+    input:
+        fasta = assembly_path,
+        gtf = "data/ncbi_refseq_hg38/{input_basename}.gz"
+    output:
+        genes_tab = f'{GEDI_INDEX_DIR}/{{input_basename}}.genes.tab',
+        index_cit = f'{GEDI_INDEX_DIR}/{{input_basename}}.index.cit',
+        transcripts_index = f'{GEDI_INDEX_DIR}/{{input_basename}}.transcripts.fasta',
+        transcripts_fi = f'{GEDI_INDEX_DIR}/{{input_basename}}.transcripts.fi',
+        transcripts_tab = f'{GEDI_INDEX_DIR}/{{input_basename}}.transcripts.tab',
+        metadata = f'{GEDI_INDEX_DIR}/{{input_basename}}_metadata.oml'
+    container:
+        container_path
+    params:
+        output_dir = GEDI_INDEX_DIR
+    log:
+        "logs/gedi/index_{input_basename}.log"
+    shell:
+        f"""
+            gedi \
+            -e IndexGenome \
+            -s {{input.fasta}} \
+            -a {{input.gtf}} \
+            -f {GEDI_INDEX_DIR} \
+            -o {GEDI_INDEX_DIR}/{{wildcards.input_basename}}_metadata.oml \
+            -n {{wildcards.input_basename}} \
+            -nobowtie -nostar -nokallisto \
+            2> {{log}}
         """
 
 rule multiqc:
