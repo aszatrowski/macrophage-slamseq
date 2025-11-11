@@ -4,15 +4,17 @@
 ### Rulegraph:
 ![pipeline rulegraph](outputs/rulegraph_dag/rulegraph.png)
 
+## Containes
+`apptainer build containers/gedi_1.0.6a.sif slamseq/gedi.def`
+
 ## envs:
 * `snakemake` is clean snakemake with the slurm execution plugin
 * `slamseq_v1` is all (I think) the dependencies for Jesse's SLAM-seq pipeline
 * `slamseq_fastp` is all the dependencies plus fastp
-* `slamseq_v2` is all the dependencies for Jesse's SLAM-seq pipeline with multiqc and featureCounts
+* `slamseq_v2` is all the dependencies for Jesse's SLAM-seq pipeline with multiqc
     * major packages:
         * `snakemake`
             * `snakemake-executor-plugin-slurm`
-            * `snakemake-storage-plugin-http`
         * `fastp`
         * `hisat-3n`
         * `samtools`

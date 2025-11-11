@@ -1,0 +1,35 @@
+Bootstrap: docker
+From: eclipse-temurin:17-jdk-jammy
+
+%environment
+    export PATH="/opt/gedi/tools/Gedi/target:$PATH"
+
+%post
+    set -eux
+
+    apt-get update && apt-get install -y --no-install-recommends \
+        git \
+        maven \
+        passwd \
+        && rm -rf /var/lib/apt/lists/*
+
+    INSTALL_DIR="/opt/gedi"
+    mkdir -p $INSTALL_DIR
+    cd $INSTALL_DIR
+
+    git clone https://github.com/erhard-lab/gedi.git
+
+    mkdir bin
+    cd bin
+
+    mvn -f $INSTALL_DIR/gedi/Gedi package 
+    # export PATH=$PATH:$INSTALL_DIR/bin
+
+    useradd -m -s /bin/bash gediuser
+    chown -R gediuser:gediuser /opt/gedi
+
+%environment
+    export PATH="/opt/gedi/bin:$PATH"
+
+%runscript
+    exec gedi "$@"

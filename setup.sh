@@ -4,6 +4,9 @@ echo "conda cache:" "$USE_CONDA_CACHE"
 module load python/miniforge-25.3.0
 echo "Loaded python/miniforge-25.3.0"
 
+module load apptainer
+echo "Loaded apptainer/singularity."
+
 ENV_NAME="${1:-slamseq_v2}"
 
 if [ -d "/project/lbarreiro/USERS/austin/envs/$ENV_NAME" ]; then
