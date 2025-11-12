@@ -3,15 +3,14 @@ import os
 
 # path to lab's shared hg38 .fa index for hisat3n and GEDI indexing
 assembly_path = '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/GRCh38.primary_assembly.genome.fa'
-data_path = '/project/lbarreiro/DATA/SLAM-seq/pilot_2025.08.19'
+data_path = '/project/lbarreiro/DATA/SLAM-seq/pilot_2025.08.19/FastX'
 container_path = '/project/lbarreiro/USERS/austin/containers/gedi_1.0.6a.sif'
 # pi account for slurm
-slurm_account = 'pi-lbarreiro'
 
 GEDI_INDEX_DIR = 'data/gedi_indexes'
 # these are so lightweight that they can be run directly on the login node; no need for slurm
 # will want to add figure generation to this
-localrules: cat_fastqs, wget_hg38_gtf, multiqc, gedi_index_genome
+localrules: cat_fastqs, wget_hg38_gtf, multiqc, gedi_index_genome, make_bamlist
 
 
 ## CHOOSE FILES
@@ -22,36 +21,64 @@ localrules: cat_fastqs, wget_hg38_gtf, multiqc, gedi_index_genome
 #               if f.endswith('.fastq.gz')][0:2]
 
 sample_ids = [
-    # 'LB-HT-28s-HT-01_S1',
-    # 'LB-HT-28s-HT-02_S2',
-    # 'LB-HT-28s-HT-03_S3', # topped out the memory at 80GB. but runs now!
-    # 'LB-HT-28s-HT-05_S5', # EVIL EVIL EVIL. WHY DOES IT RUN SO SLOWLY???? # HE WHO EATS OUR PRECIOUS SUs
+    'LB-HT-28s-HT-01_S1',
+    'LB-HT-28s-HT-02_S2',
+    'LB-HT-28s-HT-03_S3', # topped out the memory at 80GB. but runs now!
+    'LB-HT-28s-HT-05_S5', # EVIL EVIL EVIL. WHY DOES IT RUN SO SLOWLY???? # HE WHO EATS OUR PRECIOUS SUs
     'LB-HT-28s-HT-06_S6',
-    # 'LB-HT-28s-HT-07_S7',
-    # 'LB-HT-28s-HT-08_S8',
-    # 'LB-HT-28s-HT-09_S9',
+    'LB-HT-28s-HT-07_S7',
+    'LB-HT-28s-HT-08_S8',
+    'LB-HT-28s-HT-09_S9',
     'LB-HT-28s-HT-10_S10',
     'LB-HT-28s-HT-12_S12',
     'LB-HT-28s-HT-16_S16',
-    'LB-HT-28s-HT-17_S17', # smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test BUT has no nascent transcripts and fails featureCounts
+    'LB-HT-28s-HT-17_S17',# smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test BUT has no nascent transcripts and fails featureCounts
     'LB-HT-28s-HT-18_S18', # second smallest fileset (collectively R1 15GB + R2 14GB)
     # 'LB-HT-28s-JL-01_S19', # also failed. EVIL. EVEN AFTER 20HOURS??
     'LB-HT-28s-JL-02_S20',
     'LB-HT-28s-JL-04_S22',
     'LB-HT-28s-JL-05_S23',
-    # 'LB-HT-28s-JL-06_S24',
-    # 'LB-HT-28s-JL-07_S25',
-    # 'LB-HT-28s-JL-08_S26',
-    # 'LB-HT-28s-JL-09_S27'
+    'LB-HT-28s-JL-06_S24',
+    'LB-HT-28s-JL-07_S25',
+    'LB-HT-28s-JL-08_S26',
+    'LB-HT-28s-JL-09_S27'
 ]
+
 LANES = [5, 6, 7, 8]
+
+SAMPLE_METADATA = {
+    "LB-HT-28s-HT-01_S1": {"timepoint": 0, "donor": "1rep1"},
+    "LB-HT-28s-HT-02_S2": {"timepoint": 15, "donor": "1rep1"},
+    "LB-HT-28s-HT-03_S3": {"timepoint": 30, "donor": "1rep1"},
+    "LB-HT-28s-HT-05_S5": {"timepoint": 60, "donor": "1rep1"},
+    "LB-HT-28s-HT-06_S6": {"timepoint": 90, "donor": "1rep1"},
+    "LB-HT-28s-HT-07_S7": {"timepoint": 105, "donor": "1rep1"},
+    "LB-HT-28s-HT-08_S8": {"timepoint": 120, "donor": "1rep1"},
+    "LB-HT-28s-HT-09_S9": {"timepoint": 120, "donor": "1rep1"},  # no4sU
+    "LB-HT-28s-HT-10_S10": {"timepoint": 15, "donor": "2rep1"},
+    "LB-HT-28s-HT-12_S12": {"timepoint": 45, "donor": "2rep1"},
+    "LB-HT-28s-HT-16_S16": {"timepoint": 105, "donor": "2rep1"},
+    "LB-HT-28s-HT-18_S18": {"timepoint": 120, "donor": "2rep1"},  # no4sU
+    "LB-HT-28s-JL-01_S19": {"timepoint": 0, "donor": "2rep2"},
+    "LB-HT-28s-JL-02_S20": {"timepoint": 15, "donor": "2rep2"},
+    "LB-HT-28s-JL-03_S21": {"timepoint": 30, "donor": "2rep2"},
+    "LB-HT-28s-JL-04_S22": {"timepoint": 45, "donor": "2rep2"},
+    "LB-HT-28s-JL-05_S23": {"timepoint": 60, "donor": "2rep2"},
+    "LB-HT-28s-JL-06_S24": {"timepoint": 75, "donor": "2rep2"},
+    "LB-HT-28s-JL-07_S25": {"timepoint": 90, "donor": "2rep2"},
+    "LB-HT-28s-JL-08_S26": {"timepoint": 105, "donor": "2rep2"},
+    "LB-HT-28s-JL-09_S27": {"timepoint": 120, "donor": "2rep2"}
+}
+
+# DONORS = ["1rep1", "2rep1", "2rep2"]
+DONORS = ["2rep2"]
+
+def get_donor_samples(donor):
+    return [sample_id for sample_id, meta in SAMPLE_METADATA.items() 
+            if meta["donor"] == donor]
 
 rule all:
     input: 
-        expand(
-            "data/md_tagged/{sample_id}.bam",
-            sample_id = sample_ids
-        ),
         expand(
             [
                 f'{GEDI_INDEX_DIR}/{{input_basename}}.genes.tab',
@@ -63,12 +90,18 @@ rule all:
             ],
             input_basename = ['ncbi_refseq_hg38.gtf']
         ),
-        'outputs/multiqc_report.html'
+        expand(
+            "data/cit/{donor}.cit",
+            donor = DONORS
+        ),
+        # 'outputs/multiqc_report.html'
 
 rule cat_fastqs:
     input: 
         lambda wildcards: expand(
-            f"{data_path}/{{sample_id}}_L{seq_lane}_R{{end}}_001.fastq.gz",
+            f"{data_path}/{{sample_id}}_L{{seq_lane}}_R{{end}}_001.fastq.gz",  # ← double braces
+            sample_id=wildcards.sample_id,
+            end=wildcards.end,
             seq_lane=[f"{l:03d}" for l in LANES]
         )
     output: 
@@ -87,7 +120,6 @@ rule process_fastp:
         json = "data/fastp_reports/{sample_id}.json"
     threads: 4
     resources: 
-        slurm_account = 'pi-lbarreiro',
         runtime = 75, # takes 45-50 min so far, adding a little buffer for bigger files
         mem = "3G"
     shell:
@@ -111,7 +143,6 @@ rule build_hisat3n_index:
             index_n = range(1, 9)
         )
     resources: 
-        slurm_account = 'pi-lbarreiro',
         runtime = 120,
         mem_mb = 24000
     shell:  
@@ -128,7 +159,7 @@ rule align_hisat3n:
         fastq_r2 = 'data/trimmed/{sample_id}_R2_001.fastq.gz',
         index = expand(
             'data/hisat3n_indexes/hg38.3n.{converted_bases}.{index_n}.ht2',
-            converted_bases = ['CT', 'GA'], # T>C for SLAM-seq plus reverse complement
+            converted_bases = ['CT', 'GA'], # T>C for AM-seq plus reverse complement
             index_n = range(1, 9) # 9 total index files
         )
     output:
@@ -145,7 +176,6 @@ rule align_hisat3n:
     threads: 24
     resources:
         job_name = lambda wildcards: f"{wildcards.sample_id}_align_hisat3n",
-        slurm_account = 'pi-lbarreiro',
         mem_mb = "96G",
         runtime = 1440    # 24 hours in minutes # please let this be enough
     shell:
@@ -197,8 +227,6 @@ rule add_md_tags:
         bam = "data/md_tagged/{sample_id}.bam",
         bai = "data/md_tagged/{sample_id}.bam.bai"
     resources:
-        slurm_account = slurm_account,
-        slurm_partition = 'caslake',
         runtime = 120,
         mem = "12G"
     threads: 8
@@ -274,6 +302,35 @@ rule gedi_index_genome:
             -n {{wildcards.input_basename}} \
             -nobowtie -nostar -nokallisto \
             2> {{log}}
+        """
+
+rule make_bamlist:
+    input: 
+        bams = lambda wildcards: expand(
+            "data/md_tagged/{sample_id}.bam",
+            sample_id = get_donor_samples(wildcards.donor)
+        )
+    output: 
+        "data/bamlist_cit/{donor}.bamlist"
+    shell: 
+        "printf '%s\\n' {input} > {output}"
+
+rule bam_to_cit:
+    input:
+        "data/bamlist_cit/{donor}.bamlist"
+    output: 
+        "data/cit/{donor}.cit"
+    container:
+        container_path
+    resources:
+       runtime = 30,
+       mem = "2G",
+    log:
+        "logs/gedi/{donor}.log"
+    shell: # converts aligned and tagged .bam files to GRAND-SLAM's custom CIT format
+        """
+        bamlist2cit {input} 2> {log}
+        mv data/md_tagged/{wildcards.donor}.cit {output} 2> log
         """
 
 rule multiqc:

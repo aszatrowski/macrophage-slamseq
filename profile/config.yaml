@@ -1,7 +1,7 @@
 executor: slurm
 jobs: 4
 use-singularity: true # activate singularity for container:
-singularity-args: "--bind /project/lbarreiro" # give container access to all of lbarreiro
+singularity-args: "--bind /project/lbarreiro,/scratch/midway3/aszatrowski" # give container access to all of lbarreiro & personal scratch
 default-resources:
   mail_user: aszatrowski@rcc.uchicago.edu 
   mail_type: ALL # email me, or don't, as seems to be your preference
