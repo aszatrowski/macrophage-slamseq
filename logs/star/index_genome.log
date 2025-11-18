@@ -1,7 +1,0 @@
-	/project/lbarreiro/USERS/austin/envs/slamseq_v3/bin/STAR-avx2 --runMode genomeGenerate --genomeDir data/star_genome_index --genomeFastaFiles /project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/GRCh38.primary_assembly.genome.fa --sjdbGTFfile data/gencode_gtf/gencode.v49.primary_assembly.gtf --sjdbOverhang 99 --genomeSAindexNbases 14 --runThreadN 8
-	STAR version: 2.7.11b   compiled: 2025-11-14T12:06:42+0000 :/opt/conda/conda-bld/star_1763121846936/work/source
-Nov 17 10:50:07 ..... started STAR run
-Nov 17 10:50:07 ... starting to generate Genome files
-Nov 17 10:50:49 ..... processing annotations GTF
-Nov 17 10:51:39 ... starting to sort Suffix Array. This may take a long time...
-Nov 17 10:51:52 ... sorting Suffix Array chunks and saving them to disk...

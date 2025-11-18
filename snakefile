@@ -7,7 +7,7 @@ import os
 GEDI_INDEX_DIR = 'data/gedi_indexes'
 # these are so lightweight that they can be run directly on the login node; no need for slurm
 # will want to add figure generation to this
-localrules: cat_fastqs, wget_gencode_gtf, wget_hg38_gtf, multiqc, gedi_index_genome, make_bamlist
+localrules: cat_fastqs, wget_gencode_gtf, wget_hg38_gtf, multiqc, gedi_index_genome, index_bam
 configfile: "config.yaml"
 
 
@@ -31,15 +31,15 @@ sample_ids = [
     # 'LB-HT-28s-HT-12_S12',
     # 'LB-HT-28s-HT-16_S16',
     'LB-HT-28s-HT-17_S17',# smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test BUT has no nascent transcripts and fails featureCounts
-    # 'LB-HT-28s-HT-18_S18', # second smallest fileset (collectively R1 15GB + R2 14GB)
-    # # 'LB-HT-28s-JL-01_S19', # also failed. EVIL. EVEN AFTER 20HOURS??
-    # 'LB-HT-28s-JL-02_S20',
-    # 'LB-HT-28s-JL-04_S22',
-    # 'LB-HT-28s-JL-05_S23',
-    # 'LB-HT-28s-JL-06_S24',
-    # 'LB-HT-28s-JL-07_S25',
-    # 'LB-HT-28s-JL-08_S26',
-    # 'LB-HT-28s-JL-09_S27'
+    'LB-HT-28s-HT-18_S18', # second smallest fileset (collectively R1 15GB + R2 14GB)
+    'LB-HT-28s-JL-01_S19', # also failed. EVIL. EVEN AFTER 20HOURS??
+    'LB-HT-28s-JL-02_S20',
+    'LB-HT-28s-JL-04_S22',
+    'LB-HT-28s-JL-05_S23',
+    'LB-HT-28s-JL-06_S24',
+    'LB-HT-28s-JL-07_S25',
+    'LB-HT-28s-JL-08_S26',
+    'LB-HT-28s-JL-09_S27'
 ]
 
 LANES = [5, 6, 7, 8]
@@ -88,14 +88,14 @@ rule all:
         #     ],
         #     input_basename = ['ncbi_refseq_hg38.gtf']
         # ),
-        # expand(
-        #     "data/cit/{donor}.cit",
-        #     donor = DONORS
-        # ),
         expand(
-            'data/aligned_bam/{sample_id}.bam',
+            "data/aligned_bam/{sample_id}.bam.bai",
             sample_id = sample_ids
         ),
+        # expand(
+        #     "data/cit/{sample_id}.cit",
+        #     sample_id = sample_ids
+        # ),
         'outputs/multiqc_report.html'
 
 rule cat_fastqs:
@@ -190,13 +190,14 @@ rule star_align:
     params:
         # turns out these operations are MASSIVELY IO limited, so we'll copy everything to scratch, where it won't compete for RW access
         scratch = lambda wildcards: f"/scratch/midway3/$USER/{wildcards.sample_id}_$SLURM_JOB_ID",
+        max_perread_sub_fraction = 0.5
     log:
         "logs/star/{sample_id}.log" # alignment quality
     threads: 8
     resources:
         job_name = lambda wildcards: f"{wildcards.sample_id}_align_star",
         mem = "32G",
-        runtime = 10    # 24 hours in minutes # please let this be enough
+        runtime = 300    # 5 hours in minutes # please let this be enough
     shell:
         """
         # Create local scratch directory
@@ -221,7 +222,8 @@ rule star_align:
             --readFilesCommand zcat \
             --runThreadN {threads} \
             --outFilterMismatchNmax 999 \
-            --outFilterMismatchNoverReadLmax 0.04 \
+            --limitBAMsortRAM 16000000000 \
+            --outFilterMismatchNoverReadLmax {params.max_perread_sub_fraction} \
             --outSAMtype BAM SortedByCoordinate \
             --outSAMattributes nM NM MD AS \
             --outFileNamePrefix {params.scratch}/ \
@@ -234,7 +236,7 @@ rule star_align:
         cat {params.scratch}/Log.out >> {log}
         
         # Cleanup
-        # rm -rf {params.scratch}
+        rm -rf {params.scratch}
         
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Alignment complete." >> {log} 2>&1
         """
@@ -284,33 +286,43 @@ rule gedi_index_genome:
             2> {{log}}
         """
 
-rule make_bamlist:
+# rule make_bamlist:
+#     input: 
+#         bams = lambda wildcards: expand(
+#             "data/aligned_bam/{sample_id}.bam",
+#             sample_id = get_donor_samples(wildcards.donor)
+#         )
+#     output: 
+#         "data/bamlist_cit/{donor}.bamlist"
+#     shell: 
+#         "printf '%s\\n' {input} > {output}"
+
+rule index_bam:
     input: 
-        bams = lambda wildcards: expand(
-            "data/aligned_bam/{sample_id}.bam",
-            sample_id = get_donor_samples(wildcards.donor)
-        )
+        "data/aligned_bam/{sample_id}.bam"
     output: 
-        "data/bamlist_cit/{donor}.bamlist"
+        "data/aligned_bam/{sample_id}.bam.bai"
     shell: 
-        "printf '%s\\n' {input} > {output}"
+        """
+        samtools index --bai {input} -o {output}
+        """
 
 rule bam_to_cit:
     input:
-        "data/bamlist_cit/{donor}.bamlist"
+        "data/aligned_bam/{sample_id}.bam",
+        "data/aligned_bam/{sample_id}.bam.bai"
     output: 
-        "data/cit/{donor}.cit"
+        "data/cit/{sample_id}.cit"
     container:
         config['container_path']
     resources:
-       runtime = 30,
+       runtime = 10,
        mem = "2G",
     log:
-        "logs/gedi/{donor}.log"
+        "logs/gedi/bam_to_cit/{sample_id}.log"
     shell: # converts aligned and tagged .bam files to GRAND-SLAM's custom CIT format
         """
-        bamlist2cit {input} 2> {log}
-        mv data/md_tagged/{wildcards.donor}.cit {output} 2> log
+        gedi -e Bam2CIT -p {output} {input}
         """
 
 rule multiqc:

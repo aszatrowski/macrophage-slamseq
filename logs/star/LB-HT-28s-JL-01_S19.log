@@ -1,14 +1,14 @@
-[2025-11-18 00:31:34] Copying output back...
+[2025-11-17 23:38:10] Copying output back...
 STAR version=2.7.11b
 STAR compilation time,server,dir=2025-11-14T12:06:42+0000 :/opt/conda/conda-bld/star_1763121846936/work/source
 ##### Command Line:
-/project/lbarreiro/USERS/austin/envs/slamseq_v3/bin/STAR-avx2 --runMode alignReads --genomeDir /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/STAR --readFilesIn /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/LB-HT-28s-HT-17_S17_R1_001.fastq.gz /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/LB-HT-28s-HT-17_S17_R2_001.fastq.gz --readFilesCommand zcat --runThreadN 8 --outFilterMismatchNmax 999 --limitBAMsortRAM 16000000000 --outFilterMismatchNoverReadLmax 0.5 --outSAMtype BAM SortedByCoordinate --outSAMattributes nM NM MD AS --outFileNamePrefix /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/
+/project/lbarreiro/USERS/austin/envs/slamseq_v3/bin/STAR-avx2 --runMode alignReads --genomeDir /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/STAR --readFilesIn /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/LB-HT-28s-JL-01_S19_R1_001.fastq.gz /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/LB-HT-28s-JL-01_S19_R2_001.fastq.gz --readFilesCommand zcat --runThreadN 8 --outFilterMismatchNmax 999 --limitBAMsortRAM 16000000000 --outFilterMismatchNoverReadLmax 0.5 --outSAMtype BAM SortedByCoordinate --outSAMattributes nM NM MD AS --outFileNamePrefix /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/
 ##### Initial USER parameters from Command Line:
-outFileNamePrefix                 /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/
+outFileNamePrefix                 /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/
 ###### All USER parameters from Command Line:
 runMode                       alignReads        ~RE-DEFINED
-genomeDir                     /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/STAR     ~RE-DEFINED
-readFilesIn                   /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/LB-HT-28s-HT-17_S17_R1_001.fastq.gz   /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/LB-HT-28s-HT-17_S17_R2_001.fastq.gz        ~RE-DEFINED
+genomeDir                     /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/STAR     ~RE-DEFINED
+readFilesIn                   /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/LB-HT-28s-JL-01_S19_R1_001.fastq.gz   /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/LB-HT-28s-JL-01_S19_R2_001.fastq.gz        ~RE-DEFINED
 readFilesCommand              zcat        ~RE-DEFINED
 runThreadN                    8     ~RE-DEFINED
 outFilterMismatchNmax         999     ~RE-DEFINED
@@ -16,17 +16,17 @@ limitBAMsortRAM               16000000000     ~RE-DEFINED
 outFilterMismatchNoverReadLmax0.5     ~RE-DEFINED
 outSAMtype                    BAM   SortedByCoordinate        ~RE-DEFINED
 outSAMattributes              nM   NM   MD   AS        ~RE-DEFINED
-outFileNamePrefix             /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/     ~RE-DEFINED
+outFileNamePrefix             /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/     ~RE-DEFINED
 ##### Finished reading parameters from all sources
 
 ##### Final user re-defined parameters-----------------:
 runMode                           alignReads   
 runThreadN                        8
-genomeDir                         /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/STAR
-readFilesIn                       /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/LB-HT-28s-HT-17_S17_R1_001.fastq.gz   /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/LB-HT-28s-HT-17_S17_R2_001.fastq.gz   
+genomeDir                         /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/STAR
+readFilesIn                       /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/LB-HT-28s-JL-01_S19_R1_001.fastq.gz   /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/LB-HT-28s-JL-01_S19_R2_001.fastq.gz   
 readFilesCommand                  zcat   
 limitBAMsortRAM                   16000000000
-outFileNamePrefix                 /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/
+outFileNamePrefix                 /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/
 outSAMtype                        BAM   SortedByCoordinate   
 outSAMattributes                  nM   NM   MD   AS   
 outFilterMismatchNmax             999
@@ -34,27 +34,27 @@ outFilterMismatchNoverReadLmax    0.5
 
 -------------------------------
 ##### Final effective command line:
-/project/lbarreiro/USERS/austin/envs/slamseq_v3/bin/STAR-avx2   --runMode alignReads      --runThreadN 8   --genomeDir /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/STAR   --readFilesIn /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/LB-HT-28s-HT-17_S17_R1_001.fastq.gz   /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/LB-HT-28s-HT-17_S17_R2_001.fastq.gz      --readFilesCommand zcat      --limitBAMsortRAM 16000000000   --outFileNamePrefix /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/   --outSAMtype BAM   SortedByCoordinate      --outSAMattributes nM   NM   MD   AS      --outFilterMismatchNmax 999   --outFilterMismatchNoverReadLmax 0.5
+/project/lbarreiro/USERS/austin/envs/slamseq_v3/bin/STAR-avx2   --runMode alignReads      --runThreadN 8   --genomeDir /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/STAR   --readFilesIn /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/LB-HT-28s-JL-01_S19_R1_001.fastq.gz   /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/LB-HT-28s-JL-01_S19_R2_001.fastq.gz      --readFilesCommand zcat      --limitBAMsortRAM 16000000000   --outFileNamePrefix /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/   --outSAMtype BAM   SortedByCoordinate      --outSAMattributes nM   NM   MD   AS      --outFilterMismatchNmax 999   --outFilterMismatchNoverReadLmax 0.5
 ----------------------------------------
 
 Number of fastq files for each mate = 1
 
    Input read files for mate 1 :
--rw-rw-r-- 1 aszatrowski aszatrowski 656 Nov 18 00:29 /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/LB-HT-28s-HT-17_S17_R1_001.fastq.gz
+-rw-rw-r-- 1 aszatrowski aszatrowski 18297973407 Nov 17 21:03 /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/LB-HT-28s-JL-01_S19_R1_001.fastq.gz
 
    readsCommandsFile:
-exec > "/scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/_STARtmp/tmp.fifo.read1"
+exec > "/scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/_STARtmp/tmp.fifo.read1"
 echo FILE 0
-zcat      "/scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/LB-HT-28s-HT-17_S17_R1_001.fastq.gz"
+zcat      "/scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/LB-HT-28s-JL-01_S19_R1_001.fastq.gz"
 
 
    Input read files for mate 2 :
--rw-rw-r-- 1 aszatrowski aszatrowski 617 Nov 18 00:29 /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/LB-HT-28s-HT-17_S17_R2_001.fastq.gz
+-rw-rw-r-- 1 aszatrowski aszatrowski 17779661513 Nov 17 21:04 /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/LB-HT-28s-JL-01_S19_R2_001.fastq.gz
 
    readsCommandsFile:
-exec > "/scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/_STARtmp/tmp.fifo.read2"
+exec > "/scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/_STARtmp/tmp.fifo.read2"
 echo FILE 0
-zcat      "/scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/LB-HT-28s-HT-17_S17_R2_001.fastq.gz"
+zcat      "/scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/LB-HT-28s-JL-01_S19_R2_001.fastq.gz"
 
 ParametersSolo: --soloCellFilterType CellRanger2.2 filtering parameters:  3000 0.99 10
 Finished loading and checking parameters
@@ -275,7 +275,7 @@ Number of real (reference) chromosomes= 194
 193	KI270756.1	79590	3137863680
 194	KI270757.1	71251	3138125824
 --sjdbOverhang = 150 taken from the generated genome
-Started loading the genome: Tue Nov 18 00:31:12 2025
+Started loading the genome: Mon Nov 17 21:06:06 2025
 
 Genome: size given as a parameter = 3259406824
 SA: size given as a parameter = 25321267475
@@ -289,78 +289,78 @@ Loading Genome ... done! state: good=1 eof=0 fail=0 bad=0; loaded 3259406824 byt
 SA file size: 25321267475 bytes; state: good=1 eof=0 fail=0 bad=0
 Loading SA ... done! state: good=1 eof=0 fail=0 bad=0; loaded 25321267475 bytes
 Loading SAindex ... done: 97867203 bytes
-Finished loading the genome: Tue Nov 18 00:31:33 2025
+Finished loading the genome: Mon Nov 17 21:06:52 2025
 
 Processing splice junctions database sjdbN=402056,   pGe.sjdbOverhang=150 
 alignIntronMax=alignMatesGapMax=0, the max intron size will be approximately determined by (2^winBinNbits)*winAnchorDistNbins=589824
 Created thread # 1
-Created thread # 2
 Starting to map file # 0
-mate 1:   /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/LB-HT-28s-HT-17_S17_R1_001.fastq.gz
-mate 2:   /scratch/midway3/aszatrowski/LB-HT-28s-HT-17_S17_42131511/LB-HT-28s-HT-17_S17_R2_001.fastq.gz
+mate 1:   /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/LB-HT-28s-JL-01_S19_R1_001.fastq.gz
+mate 2:   /scratch/midway3/aszatrowski/LB-HT-28s-JL-01_S19_42123730/LB-HT-28s-JL-01_S19_R2_001.fastq.gz
+Created thread # 2
 Created thread # 3
 Created thread # 4
-Thread #1 end of input stream, nextChar=-1
 Created thread # 5
-Completed: thread #3
-Completed: thread #2
-Completed: thread #4
 Created thread # 6
-Completed: thread #5
 Created thread # 7
-Completed: thread #6
-Completed: thread #0
-Completed: thread #7
-BAM sorting: 8 mapped reads
+BAM sorting: 148003 mapped reads
 BAM sorting bins genomic start loci:
-1	6	102559991
-2	6	102559991
-3	6	102559991
-4	6	102559991
-5	6	102559991
-6	6	102559991
-7	6	102559991
-8	6	102559991
-9	6	102559991
-10	6	102559991
-11	6	102559991
-12	6	102559991
-13	6	102559991
-14	6	102559991
-15	6	102559991
-16	6	102559991
-17	6	102559991
-18	6	102559991
-19	6	102559991
-20	6	102559991
-21	6	102559991
-22	6	102559991
-23	6	102559991
-24	6	102559991
-25	6	102559991
-26	6	102559991
-27	6	102559991
-28	6	102559991
-29	6	102559991
-30	6	102559991
-31	6	102559991
-32	6	102559991
-33	6	102559991
-34	6	102559991
-35	6	102559991
-36	6	102559991
-37	6	102559991
-38	6	102559991
-39	6	102559991
-40	6	102559991
-41	6	102559991
-42	6	102559991
-43	6	102559991
-44	6	102559991
-45	6	102559991
-46	6	102559991
-47	6	102559991
-48	6	102559991
+1	0	120301901
+2	0	230079145
+3	1	161400418
+4	2	69898137
+5	3	77398285
+6	4	115571540
+7	5	36195105
+8	6	5529597
+9	7	11814491
+10	8	32449586
+11	9	44993202
+12	10	61131201
+13	10	78260109
+14	11	100047941
+15	13	49586591
+16	13	49862669
+17	14	67737247
+18	16	686369
+19	17	2891515
+20	19	3691504
+21	20	8209843
+22	20	8210999
+23	20	8214837
+24	20	8217829
+25	20	8254565
+26	20	8392680
+27	20	8393183
+28	20	8397367
+29	20	8400876
+30	20	8437253
+31	20	8438446
+32	20	8444066
+33	20	8988317
+34	22	47586589
+35	36	109276
+36	36	110427
+37	36	114303
+38	36	117315
+39	36	153443
+40	36	154634
+41	36	160273
+42	169	126090
+43	169	126815
+44	169	130853
+45	169	133992
+46	169	171256
+47	169	172435
+48	169	176357
+Thread #5 end of input stream, nextChar=-1
+Completed: thread #7
+Completed: thread #3
+Completed: thread #4
+Completed: thread #2
+Completed: thread #0
+Completed: thread #6
+Completed: thread #5
 Completed: thread #1
 Joined thread # 1
 Joined thread # 2
@@ -369,12 +369,12 @@ Joined thread # 4
 Joined thread # 5
 Joined thread # 6
 Joined thread # 7
-Nov 18 00:31:34 ..... finished mapping
+Nov 17 23:13:14 ..... finished mapping
 RAM after mapping:
-VmPeak:	29513516 kB; VmSize:	29431588 kB; VmHWM:	28831420 kB; VmRSS:	28831396 kB; 
+VmPeak:	29879648 kB; VmSize:	29785720 kB; VmHWM:	29453600 kB; VmRSS:	29448604 kB; 
 RAM after freeing genome index memory:
-VmPeak:	29513516 kB; VmSize:	 1425192 kB; VmHWM:	28831420 kB; VmRSS:	  825008 kB; 
-Nov 18 00:31:34 ..... started sorting BAM
-Max memory needed for sorting = 3018
+VmPeak:	29879648 kB; VmSize:	 1779324 kB; VmHWM:	29453600 kB; VmRSS:	 1442212 kB; 
+Nov 17 23:13:17 ..... started sorting BAM
+Max memory needed for sorting = 7575695969
 ALL DONE!
-[2025-11-18 00:31:34] Alignment complete.
+[2025-11-17 23:38:49] Alignment complete.
