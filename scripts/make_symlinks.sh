@@ -1,3 +1,0 @@
-# for file in /project/lbarreiro/USERS/hannah/SLAMseq/pilot_2025.08.19/FastX/*; do ln -s "$file" /project/lbarreiro/USERS/austin/slamseq/data/fastq_symlinks/; done
-# for file in /project/lbarreiro/USERS/hannah/SLAMseq/pilot_2025.08.19/FastX/*; do echo data/fastq_symlinks/"$file"; done
-find /project/lbarreiro/USERS/hannah/SLAMseq/pilot_2025.08.19/FastX -maxdepth 1 -type f -exec sh -c 'ln -s "$1" "/project/lbarreiro/USERS/austin/slamseq/data/fastq_symlinks/$(basename "$1")"' _ {} \;
