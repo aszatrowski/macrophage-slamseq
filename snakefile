@@ -7,7 +7,7 @@ import os
 GEDI_INDEX_DIR = 'data/gedi_indexes'
 # these are so lightweight that they can be run directly on the login node; no need for slurm
 # will want to add figure generation to this
-localrules: cat_fastqs, wget_gencode_gtf, wget_hg38_gtf, multiqc, gedi_index_genome, index_bam
+localrules: cat_fastqs, wget_gencode_gtf, wget_refseq_hg38_gtf, multiqc, gedi_index_genome, index_bam
 configfile: "config.yaml"
 
 
@@ -26,13 +26,13 @@ sample_ids = [
     # 'LB-HT-28s-HT-06_S6',
     # 'LB-HT-28s-HT-07_S7',
     # 'LB-HT-28s-HT-08_S8',
-    # 'LB-HT-28s-HT-09_S9',
-    # 'LB-HT-28s-HT-10_S10',
-    # 'LB-HT-28s-HT-12_S12',
-    # 'LB-HT-28s-HT-16_S16',
+    'LB-HT-28s-HT-09_S9',
+    'LB-HT-28s-HT-10_S10',
+    'LB-HT-28s-HT-12_S12',
+    'LB-HT-28s-HT-16_S16',
     'LB-HT-28s-HT-17_S17',# smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test BUT has no nascent transcripts and fails featureCounts
     'LB-HT-28s-HT-18_S18', # second smallest fileset (collectively R1 15GB + R2 14GB)
-    'LB-HT-28s-JL-01_S19', # also failed. EVIL. EVEN AFTER 20HOURS??
+    'LB-HT-28s-JL-01_S19', # also failed. EVIL. EVEN AFTER 20HOURS?? STAR FIXES.
     'LB-HT-28s-JL-02_S20',
     'LB-HT-28s-JL-04_S22',
     'LB-HT-28s-JL-05_S23',
@@ -193,11 +193,13 @@ rule star_align:
         max_perread_sub_fraction = 0.5
     log:
         "logs/star/{sample_id}.log" # alignment quality
+    benchmark:
+        "benchmarks/{sample_id}.star_align.benchmark.txt"
     threads: 8
     resources:
         job_name = lambda wildcards: f"{wildcards.sample_id}_align_star",
         mem = "32G",
-        runtime = 300    # 5 hours in minutes # please let this be enough
+        runtime = 300    # 5 hours in minutes
     shell:
         """
         # Create local scratch directory
