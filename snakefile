@@ -19,13 +19,13 @@ configfile: "config.yaml"
 #               if f.endswith('.fastq.gz')][0:2]
 
 sample_ids = [
-    # 'LB-HT-28s-HT-01_S1',
-    # 'LB-HT-28s-HT-02_S2',
-    # 'LB-HT-28s-HT-03_S3', # topped out the memory at 80GB. but runs now!
-    # 'LB-HT-28s-HT-05_S5', # EVIL EVIL EVIL. WHY DOES IT RUN SO SLOWLY???? # HE WHO EATS OUR PRECIOUS SUs
-    # 'LB-HT-28s-HT-06_S6',
-    # 'LB-HT-28s-HT-07_S7',
-    # 'LB-HT-28s-HT-08_S8',
+    'LB-HT-28s-HT-01_S1',
+    'LB-HT-28s-HT-02_S2',
+    'LB-HT-28s-HT-03_S3', # topped out the memory at 80GB. but runs now!
+    'LB-HT-28s-HT-05_S5', # EVIL EVIL EVIL. WHY DOES IT RUN SO SLOWLY???? # HE WHO EATS OUR PRECIOUS SUs
+    'LB-HT-28s-HT-06_S6',
+    'LB-HT-28s-HT-07_S7',
+    'LB-HT-28s-HT-08_S8',
     'LB-HT-28s-HT-09_S9',
     'LB-HT-28s-HT-10_S10',
     'LB-HT-28s-HT-12_S12',
