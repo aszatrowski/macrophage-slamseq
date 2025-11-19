@@ -21,8 +21,8 @@ configfile: "config.yaml"
 sample_ids = [
     'LB-HT-28s-HT-01_S1',
     'LB-HT-28s-HT-02_S2',
-    'LB-HT-28s-HT-03_S3', # topped out the memory at 80GB. but runs now!
-    'LB-HT-28s-HT-05_S5', # EVIL EVIL EVIL. WHY DOES IT RUN SO SLOWLY???? # HE WHO EATS OUR PRECIOUS SUs
+    'LB-HT-28s-HT-03_S3',
+    'LB-HT-28s-HT-05_S5',
     'LB-HT-28s-HT-06_S6',
     'LB-HT-28s-HT-07_S7',
     'LB-HT-28s-HT-08_S8',
@@ -31,8 +31,8 @@ sample_ids = [
     'LB-HT-28s-HT-12_S12',
     'LB-HT-28s-HT-16_S16',
     'LB-HT-28s-HT-17_S17',# smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test BUT has no nascent transcripts and fails featureCounts
-    'LB-HT-28s-HT-18_S18', # second smallest fileset (collectively R1 15GB + R2 14GB)
-    'LB-HT-28s-JL-01_S19', # also failed. EVIL. EVEN AFTER 20HOURS?? STAR FIXES.
+    'LB-HT-28s-HT-18_S18',
+    'LB-HT-28s-JL-01_S19',
     'LB-HT-28s-JL-02_S20',
     'LB-HT-28s-JL-04_S22',
     'LB-HT-28s-JL-05_S23',
@@ -199,7 +199,7 @@ rule star_align:
     resources:
         job_name = lambda wildcards: f"{wildcards.sample_id}_align_star",
         mem = "32G",
-        runtime = 300    # 5 hours in minutes
+        runtime = 240    # 4 hours in minutes
     shell:
         """
         # Create local scratch directory
