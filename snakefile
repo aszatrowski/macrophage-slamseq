@@ -1,15 +1,8 @@
 ## CONFIG:
-import os
-
-# path to lab's shared hg38 .fa index for hisat3n and GEDI indexing
-# pi account for slurm
-
-GEDI_INDEX_DIR = 'data/gedi_indexes'
+configfile: "config.yaml"
 # these are so lightweight that they can be run directly on the login node; no need for slurm
 # will want to add figure generation to this
 localrules: cat_fastqs, wget_gencode_gtf, wget_refseq_hg38_gtf, multiqc, gedi_index_genome, index_bam
-configfile: "config.yaml"
-
 
 ## CHOOSE FILES
 # find all sample files in the folder, and remove _R1_001 & _R2_001 since paired-end reads will be processed together
@@ -79,12 +72,12 @@ rule all:
     input: 
         # expand(
         #     [
-        #         f'{GEDI_INDEX_DIR}/{{input_basename}}.genes.tab',
-        #         f'{GEDI_INDEX_DIR}/{{input_basename}}.index.cit',
-        #         f'{GEDI_INDEX_DIR}/{{input_basename}}.transcripts.fasta',
-        #         f'{GEDI_INDEX_DIR}/{{input_basename}}.transcripts.fi',
-        #         f'{GEDI_INDEX_DIR}/{{input_basename}}.transcripts.tab',
-        #         f'{GEDI_INDEX_DIR}/{{input_basename}}_metadata.oml'
+        #         f'{config['gedi_index_dir']}/{{input_basename}}.genes.tab',
+        #         f'{config['gedi_index_dir']}/{{input_basename}}.index.cit',
+        #         f'{config['gedi_index_dir']}/{{input_basename}}.transcripts.fasta',
+        #         f'{config['gedi_index_dir']}/{{input_basename}}.transcripts.fi',
+        #         f'{config['gedi_index_dir']}/{{input_basename}}.transcripts.tab',
+        #         f'{config['gedi_index_dir']}/{{input_basename}}_metadata.oml'
         #     ],
         #     input_basename = ['ncbi_refseq_hg38.gtf']
         # ),
@@ -263,16 +256,16 @@ rule gedi_index_genome:
         fasta = config["assembly_path"],
         gtf = "data/ncbi_refseq_hg38/{input_basename}.gz"
     output:
-        genes_tab = f'{GEDI_INDEX_DIR}/{{input_basename}}.genes.tab',
-        index_cit = f'{GEDI_INDEX_DIR}/{{input_basename}}.index.cit',
-        transcripts_index = f'{GEDI_INDEX_DIR}/{{input_basename}}.transcripts.fasta',
-        transcripts_fi = f'{GEDI_INDEX_DIR}/{{input_basename}}.transcripts.fi',
-        transcripts_tab = f'{GEDI_INDEX_DIR}/{{input_basename}}.transcripts.tab',
-        metadata = f'{GEDI_INDEX_DIR}/{{input_basename}}_metadata.oml'
+        genes_tab = f'{config['gedi_index_dir']}/{{input_basename}}.genes.tab',
+        index_cit = f'{config['gedi_index_dir']}/{{input_basename}}.index.cit',
+        transcripts_index = f'{config['gedi_index_dir']}/{{input_basename}}.transcripts.fasta',
+        transcripts_fi = f'{config['gedi_index_dir']}/{{input_basename}}.transcripts.fi',
+        transcripts_tab = f'{config['gedi_index_dir']}/{{input_basename}}.transcripts.tab',
+        metadata = f'{config['gedi_index_dir']}/{{input_basename}}_metadata.oml'
     container:
         config['container_path']
     params:
-        output_dir = GEDI_INDEX_DIR
+        output_dir = config['gedi_index_dir']
     log:
         "logs/gedi/index_{input_basename}.log"
     shell:
@@ -281,8 +274,8 @@ rule gedi_index_genome:
             -e IndexGenome \
             -s {{input.fasta}} \
             -a {{input.gtf}} \
-            -f {GEDI_INDEX_DIR} \
-            -o {GEDI_INDEX_DIR}/{{wildcards.input_basename}}_metadata.oml \
+            -f {config['gedi_index_dir']} \
+            -o {config['gedi_index_dir']}/{{wildcards.input_basename}}_metadata.oml \
             -n {{wildcards.input_basename}} \
             -nobowtie -nostar -nokallisto \
             2> {{log}}

@@ -2,7 +2,7 @@
 assembly_path: '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/GRCh38.primary_assembly.genome.fa'
 data_path: '/project/lbarreiro/DATA/SLAM-seq/pilot_2025.08.19/FastX'
 container_path: '/project/lbarreiro/USERS/austin/containers/gedi_1.0.6a.sif'
-
+gedi_index_dir: 'data/gedi_indexes'
 # star configurations:
 read_length: 100  # or 150, 75, etc.
 genomeSAindexNbases: 14  # 14 for human/mouse, adjust for other organisms
