@@ -1,1 +1,2 @@
-gedi -e GrandSlam -genomic config/genomic/ncbi_refseq_hg38.gtf -reads data/cit/LB-HT-28s-HT-17_S17.cit -prefix data/grand_slam/LB-HT-28s-HT-17_S17/slam_quant -progress -dry -D
+gedi -e IndexGenome -organism homo_sapiens -version 115 -n ensembl_hg38 -f config/genomic -o config/genomic/hg38.oml -D -p -nomapping
+gedi -e Slam -genomic config/genomic/homo_sapiens.115.oml data/cit/LB-HT-28s-HT-17_S17.cit -progress -prefix LB-HT-28s-HT-17_S17/slam_quant 

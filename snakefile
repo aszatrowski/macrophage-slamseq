@@ -70,15 +70,11 @@ def get_donor_samples(donor):
 
 rule all:
     input: 
-        # expand(
-        #     "data/cit/{sample_id}.cit",
-        #     sample_id = sample_ids
-        # ),
         expand(
-            "{sample_id}/slam_quant.tsv", # {prefix}.tsv
-            sample_id = 'LB-HT-28s-HT-17_S17'
+            "data/cit/{sample_id}.cit",
+            sample_id = sample_ids
         ),
-        'outputs/multiqc_report.html'
+        # 'outputs/multiqc_report.html'
 
 rule cat_fastqs:
     input: 
@@ -116,21 +112,6 @@ rule process_fastp:
             "--thread {threads} "
             "--detect_adapter_for_pe " # dynamically detect adapter sequences
         )
-
-rule wget_gencode_gtf:
-    output: 
-        temp("data/gencode_gtf/gencode.v49.primary_assembly.gtf")
-    params:
-        refseq_path = "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.primary_assembly.annotation.gtf.gz",
-        folder = 'data/gencode_gtf'
-    shell: 
-        """
-        wget {params.refseq_path} \
-            --output-document {params.folder}/gencode.v49.primary_assembly.gtf.gz  \
-            --force-directories \
-            --show-progress
-        gunzip {params.folder}/gencode.v49.primary_assembly.gtf.gz
-        """
 
 rule build_star_index:
     input:
@@ -229,12 +210,13 @@ rule gedi_index_genome:
     output:
         fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.fasta",
         fi = f"{config['gedi_index_dir']}/homo_sapiens.115.fi",
+        genes_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.genes.tab",
         gtf = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf",
-        genes_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.genes.tab",
-        index_cit = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.index.cit",
-        transcripts_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.tab",
-        transcripts_fi = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.fi",
-        transcripts_fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.fasta",
+        index_cit = f"{config['gedi_index_dir']}/homo_sapiens.115.index.cit",
+        transcripts_fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.fasta",
+        transcripts_fi = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.fi",
+        transcripts_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.tab",
+        oml = f"{config['gedi_index_dir']}/homo_sapiens.115.oml"
     container:
         config['container_path']
     resources:
@@ -242,32 +224,12 @@ rule gedi_index_genome:
         runtime = 5 
     params:
         output_dir = config['gedi_index_dir']
-    log:
-        "logs/gedi/index_homo_sapiens.log"
     shell:
-        """
+        # if this breaks it's because I dropped -D from it
+        f"""
             mkdir -p config/genomic
-            gedi \
-                -e IndexGenome \
-                -organism homo_sapiens \
-                -version 115 \
-                -p \
-                -f config/genomic \
-                -nobowtie -nostar -nokallisto 
-            2&1> {log}
-            # mv homo_sapiens.115.fasta homo_sapiens.115.fi homo_sapiens.115.gtf homo_sapiens.115.gtf.genes.tab homo_sapiens.115.gtf.index.cit homo_sapiens.115.gtf.transcripts.tab homo_sapiens.115.gtf.transcripts.fi homo_sapiens.115.gtf.transcripts.fasta config/genomic
+            gedi -e IndexGenome -organism homo_sapiens -version 115 -f config/genomic -o {config['gedi_index_dir']}/homo_sapiens.115.oml -nomapping
         """
-
-# rule make_bamlist:
-#     input: 
-#         bams = lambda wildcards: expand(
-#             "data/aligned_bam/{sample_id}.bam",
-#             sample_id = get_donor_samples(wildcards.donor)
-#         )
-#     output: 
-#         "data/bamlist_cit/{donor}.bamlist"
-#     shell: 
-#         "printf '%s\\n' {input} > {output}"
 
 rule index_bam:
     input: 
@@ -279,21 +241,41 @@ rule index_bam:
         samtools index --bai {input} -o {output}
         """
 
+rule remove_dels:
+    input: 
+        bam = "data/aligned_bam/{sample_id}.bam",
+        bai = "data/aligned_bam/{sample_id}.bam.bai"
+    output: 
+        bam_no_del = "data/bam_no_del/{sample_id}.bam",
+        bai_no_del = "data/bam_no_del/{sample_id}.bam.bai"
+    threads: 4
+    resources:
+       runtime = 15,
+       mem = "4G",
+    shell: 
+        r"""
+        samtools view -h {input.bam} | \
+        awk '!/\^[ACGTN]/ || /^@/ {{print}}' | \
+        samtools view -h -bS | \
+        samtools sort -@ {threads} > {output.bam_no_del}
+        samtools index --bai {output.bam_no_del} -o {output.bai_no_del}
+        """
+
 rule bam_to_cit:
     input:
-        bam = "data/aligned_bam/{sample_id}.bam",
-        bai = "data/aligned_bam/{sample_id}.bam.bai",
+        bam_no_del = "data/bam_no_del/{sample_id}.bam",
+        bai_no_del = "data/bam_no_del/{sample_id}.bam.bai",
         # GEDI index files
         fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.fasta",
         fi = f"{config['gedi_index_dir']}/homo_sapiens.115.fi",
+        genes_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.genes.tab",
         gtf = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf",
-        genes_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.genes.tab",
-        index_cit = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.index.cit",
-        transcripts_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.tab",
-        transcripts_fi = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.fi",
-        transcripts_fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.fasta",
+        index_cit = f"{config['gedi_index_dir']}/homo_sapiens.115.index.cit",
+        transcripts_fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.fasta",
+        transcripts_fi = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.fi",
+        transcripts_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.tab"
     output: 
-        "data/cit/{sample_id}.cit"
+        cit = "data/cit/{sample_id}.cit"
     container:
         config['container_path']
     resources:
@@ -301,20 +283,21 @@ rule bam_to_cit:
        mem = "8G",
     shell: # converts aligned and tagged .bam files to GRAND-SLAM's custom CIT format
         """
-        gedi -e Bam2CIT -p {output} {input}
+        gedi -e Bam2CIT -p {output.cit} {input.bam_no_del}
         """
 
 rule grand_slam:
     input: 
-        sample_cit = "data/cit/{sample_id}.cit",
+        bam_no_del = "data/bam_no_del/{sample_id}.bam",
         fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.fasta",
         fi = f"{config['gedi_index_dir']}/homo_sapiens.115.fi",
+        genes_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.genes.tab",
         gtf = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf",
-        genes_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.genes.tab",
-        index_cit = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.index.cit",
-        transcripts_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.tab",
-        transcripts_fi = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.fi",
-        transcripts_fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.fasta",
+        index_cit = f"{config['gedi_index_dir']}/homo_sapiens.115.index.cit",
+        transcripts_fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.fasta",
+        transcripts_fi = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.fi",
+        transcripts_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.tab",
+        oml = f"{config['gedi_index_dir']}/homo_sapiens.115.oml"
     output: 
         slam_counts = "{sample_id}/slam_quant.tsv" # {prefix}.tsv
         # -full outputs
@@ -334,13 +317,22 @@ rule grand_slam:
     log:
         "logs/gedi/slam/{sample_id}.log"
     shell: 
-        """
+        f"""
         gedi -e Slam \
-            -genomic {input.index_cit} \
-            {input.sample_cit} \
+            -genomic {config['gedi_index_dir']}/homo_sapiens.115.oml \
+            {{input.bam_no_del}} \
             -progress \
-            -prefix {wildcards.sample_id}/slam_quant
+            -prefix {{wildcards.sample_id}}/slam_quant \
+            -intron 2&1> {{log}}
         """
+        # gedi -e Slam \
+        #     -genomic {config['gedi_index_dir']}/homo_sapiens \
+        #     -reads {{input.sample_cit}} \
+        #     -progress \
+        #     -D \
+        #     -plot \
+        #     -prefix {{wildcards.sample_id}}/slam_quant
+        # """
 rule multiqc:
     input: 
         expand(
