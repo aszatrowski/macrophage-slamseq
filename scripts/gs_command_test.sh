@@ -1,0 +1,1 @@
+gedi -e GrandSlam -genomic config/genomic/ncbi_refseq_hg38.gtf -reads data/cit/LB-HT-28s-HT-17_S17.cit -prefix data/grand_slam/LB-HT-28s-HT-17_S17/slam_quant -progress -dry -D

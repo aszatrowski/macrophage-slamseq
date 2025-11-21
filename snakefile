@@ -2,7 +2,7 @@
 configfile: "config.yaml"
 # these are so lightweight that they can be run directly on the login node; no need for slurm
 # will want to add figure generation to this
-localrules: cat_fastqs, wget_gencode_gtf, wget_refseq_hg38_gtf, multiqc, gedi_index_genome, index_bam
+localrules: cat_fastqs, index_bam, multiqc
 
 ## CHOOSE FILES
 # find all sample files in the folder, and remove _R1_001 & _R2_001 since paired-end reads will be processed together
@@ -71,24 +71,13 @@ def get_donor_samples(donor):
 rule all:
     input: 
         # expand(
-        #     [
-        #         f'{config['gedi_index_dir']}/{{input_basename}}.genes.tab',
-        #         f'{config['gedi_index_dir']}/{{input_basename}}.index.cit',
-        #         f'{config['gedi_index_dir']}/{{input_basename}}.transcripts.fasta',
-        #         f'{config['gedi_index_dir']}/{{input_basename}}.transcripts.fi',
-        #         f'{config['gedi_index_dir']}/{{input_basename}}.transcripts.tab',
-        #         f'{config['gedi_index_dir']}/{{input_basename}}_metadata.oml'
-        #     ],
-        #     input_basename = ['ncbi_refseq_hg38.gtf']
-        # ),
-        expand(
-            "data/aligned_bam/{sample_id}.bam.bai",
-            sample_id = sample_ids
-        ),
-        # expand(
         #     "data/cit/{sample_id}.cit",
         #     sample_id = sample_ids
         # ),
+        expand(
+            "{sample_id}/slam_quant.tsv", # {prefix}.tsv
+            sample_id = 'LB-HT-28s-HT-17_S17'
+        ),
         'outputs/multiqc_report.html'
 
 rule cat_fastqs:
@@ -236,49 +225,37 @@ rule star_align:
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Alignment complete." >> {log} 2>&1
         """
 
-
-rule wget_refseq_hg38_gtf:
-    output: 
-        temp("data/refseq_hg38_gtf/refseq_hg38.v49.primary_assembly.gtf")
-    params:
-        refseq_path = "https://ftp.ebi.ac.uk/pub/databases/refseq_hg38/refseq_hg38_human/release_49/refseq_hg38.v49.primary_assembly.annotation.gtf.gz",
-        folder = 'data/refseq_hg38_gtf'
-    shell: 
-        """
-        wget {params.refseq_path} \
-            --output-document {params.folder}/refseq_hg38.v49.primary_assembly.gtf.gz  \
-            --force-directories \
-            --show-progress
-        """
-    
 rule gedi_index_genome:
-    input:
-        fasta = config["assembly_path"],
-        gtf = "data/ncbi_refseq_hg38/{input_basename}.gz"
     output:
-        genes_tab = f'{config['gedi_index_dir']}/{{input_basename}}.genes.tab',
-        index_cit = f'{config['gedi_index_dir']}/{{input_basename}}.index.cit',
-        transcripts_index = f'{config['gedi_index_dir']}/{{input_basename}}.transcripts.fasta',
-        transcripts_fi = f'{config['gedi_index_dir']}/{{input_basename}}.transcripts.fi',
-        transcripts_tab = f'{config['gedi_index_dir']}/{{input_basename}}.transcripts.tab',
-        metadata = f'{config['gedi_index_dir']}/{{input_basename}}_metadata.oml'
+        fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.fasta",
+        fi = f"{config['gedi_index_dir']}/homo_sapiens.115.fi",
+        gtf = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf",
+        genes_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.genes.tab",
+        index_cit = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.index.cit",
+        transcripts_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.tab",
+        transcripts_fi = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.fi",
+        transcripts_fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.fasta",
     container:
         config['container_path']
+    resources:
+        mem_mb= "8G",
+        runtime = 5 
     params:
         output_dir = config['gedi_index_dir']
     log:
-        "logs/gedi/index_{input_basename}.log"
+        "logs/gedi/index_homo_sapiens.log"
     shell:
-        f"""
+        """
+            mkdir -p config/genomic
             gedi \
-            -e IndexGenome \
-            -s {{input.fasta}} \
-            -a {{input.gtf}} \
-            -f {config['gedi_index_dir']} \
-            -o {config['gedi_index_dir']}/{{wildcards.input_basename}}_metadata.oml \
-            -n {{wildcards.input_basename}} \
-            -nobowtie -nostar -nokallisto \
-            2> {{log}}
+                -e IndexGenome \
+                -organism homo_sapiens \
+                -version 115 \
+                -p \
+                -f config/genomic \
+                -nobowtie -nostar -nokallisto 
+            2&1> {log}
+            # mv homo_sapiens.115.fasta homo_sapiens.115.fi homo_sapiens.115.gtf homo_sapiens.115.gtf.genes.tab homo_sapiens.115.gtf.index.cit homo_sapiens.115.gtf.transcripts.tab homo_sapiens.115.gtf.transcripts.fi homo_sapiens.115.gtf.transcripts.fasta config/genomic
         """
 
 # rule make_bamlist:
@@ -304,22 +281,66 @@ rule index_bam:
 
 rule bam_to_cit:
     input:
-        "data/aligned_bam/{sample_id}.bam",
-        "data/aligned_bam/{sample_id}.bam.bai"
+        bam = "data/aligned_bam/{sample_id}.bam",
+        bai = "data/aligned_bam/{sample_id}.bam.bai",
+        # GEDI index files
+        fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.fasta",
+        fi = f"{config['gedi_index_dir']}/homo_sapiens.115.fi",
+        gtf = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf",
+        genes_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.genes.tab",
+        index_cit = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.index.cit",
+        transcripts_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.tab",
+        transcripts_fi = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.fi",
+        transcripts_fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.fasta",
     output: 
         "data/cit/{sample_id}.cit"
     container:
         config['container_path']
     resources:
-       runtime = 10,
-       mem = "2G",
-    log:
-        "logs/gedi/bam_to_cit/{sample_id}.log"
+       runtime = 15,
+       mem = "8G",
     shell: # converts aligned and tagged .bam files to GRAND-SLAM's custom CIT format
         """
         gedi -e Bam2CIT -p {output} {input}
         """
 
+rule grand_slam:
+    input: 
+        sample_cit = "data/cit/{sample_id}.cit",
+        fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.fasta",
+        fi = f"{config['gedi_index_dir']}/homo_sapiens.115.fi",
+        gtf = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf",
+        genes_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.genes.tab",
+        index_cit = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.index.cit",
+        transcripts_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.tab",
+        transcripts_fi = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.fi",
+        transcripts_fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf.transcripts.fasta",
+    output: 
+        slam_counts = "{sample_id}/slam_quant.tsv" # {prefix}.tsv
+        # -full outputs
+        # mismatches = "{sample_id}/slam_quant.mismatches.pdf",
+        # double = "{sample_id}/slam_quant.double.pdf",
+        # mismatchpos = "{sample_id}/slam_quant.mismatchpos.pdf",
+        # mismatchposzoomed = "{sample_id}/slam_quant.mismatchposzoomed.pdf",
+        # binomRates = "{sample_id}/slam_quant.binomRates.png",
+        # mismatches = "{sample_id}/slam_quant.mismatches.pdf",
+        # mismatches = "{sample_id}/slam_quant.mismatches.pdf",
+        # mismatches = "{sample_id}/slam_quant.mismatches.pdf"
+    container:
+        config['container_path']
+    resources:
+       runtime = 30,
+       mem = "8G",
+    log:
+        "logs/gedi/slam/{sample_id}.log"
+    shell: 
+        """
+        gedi -e Slam \
+            -genomic {input.index_cit} \
+            {input.sample_cit} \
+            -progress \
+            -prefix {wildcards.sample_id}/slam_quant
+        """
 rule multiqc:
     input: 
         expand(

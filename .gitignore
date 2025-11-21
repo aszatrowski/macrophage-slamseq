@@ -3,4 +3,5 @@
 .gedi/
 data/
 tmp/
+config/
 outputs/multiqc_data/
