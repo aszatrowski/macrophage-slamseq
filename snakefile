@@ -71,10 +71,14 @@ def get_donor_samples(donor):
 rule all:
     input: 
         expand(
-            "data/cit/{sample_id}.cit",
+            "data/aligned_bam/{sample_id}.bam",
             sample_id = sample_ids
         ),
-        # 'outputs/multiqc_report.html'
+        expand(
+            "data/aligned_bam/{sample_id}.bam.bai",
+            sample_id = sample_ids
+        ),
+        'outputs/multiqc_report.html'
 
 rule cat_fastqs:
     input: 
