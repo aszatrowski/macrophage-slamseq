@@ -12,17 +12,17 @@ localrules: cat_fastqs, index_bam, multiqc
 #               if f.endswith('.fastq.gz')][0:2]
 
 sample_ids = [
-    'LB-HT-28s-HT-01_S1',
-    'LB-HT-28s-HT-02_S2',
-    'LB-HT-28s-HT-03_S3',
-    'LB-HT-28s-HT-05_S5',
-    'LB-HT-28s-HT-06_S6',
-    'LB-HT-28s-HT-07_S7',
-    'LB-HT-28s-HT-08_S8',
-    'LB-HT-28s-HT-09_S9',
-    'LB-HT-28s-HT-10_S10',
-    'LB-HT-28s-HT-12_S12',
-    'LB-HT-28s-HT-16_S16',
+    # 'LB-HT-28s-HT-01_S1',
+    # 'LB-HT-28s-HT-02_S2',
+    # 'LB-HT-28s-HT-03_S3',
+    # 'LB-HT-28s-HT-05_S5',
+    # 'LB-HT-28s-HT-06_S6',
+    # 'LB-HT-28s-HT-07_S7',
+    # 'LB-HT-28s-HT-08_S8',
+    # 'LB-HT-28s-HT-09_S9',
+    # 'LB-HT-28s-HT-10_S10',
+    # 'LB-HT-28s-HT-12_S12',
+    # 'LB-HT-28s-HT-16_S16',
     'LB-HT-28s-HT-17_S17',# smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test BUT has no nascent transcripts and fails featureCounts
     'LB-HT-28s-HT-18_S18',
     'LB-HT-28s-JL-01_S19',
@@ -30,9 +30,9 @@ sample_ids = [
     'LB-HT-28s-JL-04_S22',
     'LB-HT-28s-JL-05_S23',
     'LB-HT-28s-JL-06_S24',
-    'LB-HT-28s-JL-07_S25',
+    # 'LB-HT-28s-JL-07_S25',
     'LB-HT-28s-JL-08_S26',
-    'LB-HT-28s-JL-09_S27'
+    # 'LB-HT-28s-JL-09_S27'
 ]
 
 LANES = [5, 6, 7, 8]
@@ -70,14 +70,19 @@ def get_donor_samples(donor):
 
 rule all:
     input: 
+        # expand(
+        #     "data/cit/{sample_id}.cit",
+        #     sample_id = sample_ids
+        # ),
         expand(
-            "data/aligned_bam/{sample_id}.bam",
-            sample_id = sample_ids
+            "data/aligned_bam_{max_perread_sub_fraction}/{sample_id}.bam",
+            sample_id = sample_ids,
+            max_perread_sub_fraction = [0.25, 0.1]
         ),
-        expand(
-            "data/aligned_bam/{sample_id}.bam.bai",
-            sample_id = sample_ids
-        ),
+        # expand(
+        #     "data/aligned_bam/{sample_id}.bam.bai",
+        #     sample_id = sample_ids
+        # ),
         'outputs/multiqc_report.html'
 
 rule cat_fastqs:
@@ -152,16 +157,16 @@ rule star_align:
         fastq_r2 = 'data/trimmed/{sample_id}_R2_001.fastq.gz',
         index = '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/STAR'
     output:
-        aligned_bam = 'data/aligned_bam/{sample_id}.bam',
-        stats = 'logs/star/qc/{sample_id}.Log.final.out'
+        aligned_bam = 'data/aligned_bam_{max_perread_sub_fraction}/{sample_id}.bam',
+        stats = 'logs/star/qc/{sample_id}_{max_perread_sub_fraction}.Log.final.out'
     params:
         # turns out these operations are MASSIVELY IO limited, so we'll copy everything to scratch, where it won't compete for RW access
         scratch = lambda wildcards: f"/scratch/midway3/$USER/{wildcards.sample_id}_$SLURM_JOB_ID",
-        max_perread_sub_fraction = 0.5
+        # max_perread_sub_fraction = 0.25
     log:
-        "logs/star/{sample_id}.log" # alignment quality
+        "logs/star/{sample_id}_{max_perread_sub_fraction}.log" # alignment quality
     benchmark:
-        "benchmarks/{sample_id}.star_align.benchmark.txt"
+        "benchmarks/{sample_id}.star_align_{max_perread_sub_fraction}.benchmark.txt"
     threads: 8
     resources:
         job_name = lambda wildcards: f"{wildcards.sample_id}_align_star",
@@ -192,7 +197,7 @@ rule star_align:
             --runThreadN {threads} \
             --outFilterMismatchNmax 999 \
             --limitBAMsortRAM 16000000000 \
-            --outFilterMismatchNoverReadLmax {params.max_perread_sub_fraction} \
+            --outFilterMismatchNoverReadLmax {wildcards.max_perread_sub_fraction} \
             --outSAMtype BAM SortedByCoordinate \
             --outSAMattributes nM NM MD AS \
             --outFileNamePrefix {params.scratch}/ \
@@ -345,8 +350,9 @@ rule multiqc:
             filetype = ['json']
         ),
         expand(
-            'logs/star/qc/{sample_id}.Log.final.out',
-            sample_id = sample_ids
+            'logs/star/qc/{sample_id}_{max_perread_sub_fraction}.Log.final.out',
+            sample_id = sample_ids,
+            max_perread_sub_fraction = [0.25, 0.1]
         )
     output: 
         'outputs/multiqc_report.html'
