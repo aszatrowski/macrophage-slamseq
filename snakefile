@@ -70,15 +70,15 @@ def get_donor_samples(donor):
 
 rule all:
     input: 
-        # expand(
-        #     "data/cit/{sample_id}.cit",
-        #     sample_id = sample_ids
-        # ),
         expand(
-            "data/aligned_bam_{max_perread_sub_fraction}/{sample_id}.bam",
-            sample_id = sample_ids,
-            max_perread_sub_fraction = [0.25, 0.1]
+            "data/cit/{sample_id}.cit",
+            sample_id = ['LB-HT-28s-HT-17_S17', 'LB-HT-28s-HT-18_S18']
         ),
+        # expand(
+        #     "data/aligned_bam_{max_perread_sub_fraction}/{sample_id}.bam",
+        #     sample_id = sample_ids,
+        #     max_perread_sub_fraction = [0.25, 0.1]
+        # ),
         # expand(
         #     "data/aligned_bam/{sample_id}.bam.bai",
         #     sample_id = sample_ids
@@ -250,30 +250,30 @@ rule index_bam:
         samtools index --bai {input} -o {output}
         """
 
-rule remove_dels:
-    input: 
-        bam = "data/aligned_bam/{sample_id}.bam",
-        bai = "data/aligned_bam/{sample_id}.bam.bai"
-    output: 
-        bam_no_del = "data/bam_no_del/{sample_id}.bam",
-        bai_no_del = "data/bam_no_del/{sample_id}.bam.bai"
-    threads: 4
-    resources:
-       runtime = 15,
-       mem = "4G",
-    shell: 
-        r"""
-        samtools view -h {input.bam} | \
-        awk '!/\^[ACGTN]/ || /^@/ {{print}}' | \
-        samtools view -h -bS | \
-        samtools sort -@ {threads} > {output.bam_no_del}
-        samtools index --bai {output.bam_no_del} -o {output.bai_no_del}
-        """
+# rule remove_dels:
+#     input: 
+#         bam = "data/aligned_bam/{sample_id}.bam",
+#         bai = "data/aligned_bam/{sample_id}.bam.bai"
+#     output: 
+#         bam_no_del = "data/bam_no_del/{sample_id}.bam",
+#         bai_no_del = "data/bam_no_del/{sample_id}.bam.bai"
+#     threads: 4
+#     resources:
+#        runtime = 15,
+#        mem = "4G",
+#     shell: 
+#         r"""
+#         samtools view -h {input.bam} | \
+#         awk '!/\^[ACGTN]/ || /^@/ {{print}}' | \
+#         samtools view -h -bS | \
+#         samtools sort -@ {threads} > {output.bam_no_del}
+#         samtools index --bai {output.bam_no_del} -o {output.bai_no_del}
+#         """
 
 rule bam_to_cit:
     input:
-        bam_no_del = "data/bam_no_del/{sample_id}.bam",
-        bai_no_del = "data/bam_no_del/{sample_id}.bam.bai",
+        bam = "data/aligned_bam/{sample_id}.bam",
+        bai = "data/aligned_bam/{sample_id}.bam.bai",
         # GEDI index files
         fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.fasta",
         fi = f"{config['gedi_index_dir']}/homo_sapiens.115.fi",
@@ -292,12 +292,12 @@ rule bam_to_cit:
        mem = "8G",
     shell: # converts aligned and tagged .bam files to GRAND-SLAM's custom CIT format
         """
-        gedi -e Bam2CIT -p {output.cit} {input.bam_no_del}
+        gedi -e Bam2CIT -p {output.cit} {input.bam}
         """
 
 rule grand_slam:
     input: 
-        bam_no_del = "data/bam_no_del/{sample_id}.bam",
+        sample_cit = "data/cit/{sample_id}.cit",
         fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.fasta",
         fi = f"{config['gedi_index_dir']}/homo_sapiens.115.fi",
         genes_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.genes.tab",
@@ -306,7 +306,7 @@ rule grand_slam:
         transcripts_fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.fasta",
         transcripts_fi = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.fi",
         transcripts_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.tab",
-        oml = f"{config['gedi_index_dir']}/homo_sapiens.115.oml"
+        ref_oml = f"{config['gedi_index_dir']}/homo_sapiens.115.oml"
     output: 
         slam_counts = "{sample_id}/slam_quant.tsv" # {prefix}.tsv
         # -full outputs
@@ -327,21 +327,14 @@ rule grand_slam:
         "logs/gedi/slam/{sample_id}.log"
     shell: 
         f"""
-        gedi -e Slam \
-            -genomic {config['gedi_index_dir']}/homo_sapiens.115.oml \
-            {{input.bam_no_del}} \
-            -progress \
-            -prefix {{wildcards.sample_id}}/slam_quant \
-            -intron 2&1> {{log}}
+            gedi -e Slam \
+            -genomic {{input.ref_oml}} \
+            -reads data/aligned_bam/{{input.sample_cit}}
+            -prefix data/slam_quant/LB-HT-28s-HT-18_S18/grandslam
+            -nthreads {{threads}}
+            -introns
+            -progress
         """
-        # gedi -e Slam \
-        #     -genomic {config['gedi_index_dir']}/homo_sapiens \
-        #     -reads {{input.sample_cit}} \
-        #     -progress \
-        #     -D \
-        #     -plot \
-        #     -prefix {{wildcards.sample_id}}/slam_quant
-        # """
 rule multiqc:
     input: 
         expand(
