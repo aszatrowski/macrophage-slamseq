@@ -2,10 +2,14 @@
 *Austin Szatrowski, based on a SLAMseq analysis pipeline by Jesse Lehman, Pai Lab @ UMass Med*
 
 ### Rulegraph:
-![pipeline rulegraph](outputs/rulegraph_dag/rulegraph.png)
+![pipeline rulegraph](outputs/rulegraph.png)
 
-## Containes
+## Containers
 `apptainer build containers/gedi_1.0.6a.sif slamseq/gedi.def`
+
+**Make sure you do this before running the pipeline.**
+* This is a container (like a conda environment), but it can specify any system configuration, including OS versions, memory, environment variables, and arbitrary software, rather than just packages on `conda-forge` or `bioconda`. Since GEDI/GRAND-SLAM is on neither, I've specified a container to pin its version and let it run in isolation, just as one would with conda.
+    * The above command builds the container from the definition file (analogous to conda's `environment.yaml`) called `gedi.def`.
 
 ## envs:
 * `snakemake` is clean snakemake with the slurm execution plugin
