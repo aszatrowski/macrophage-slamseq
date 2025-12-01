@@ -72,7 +72,7 @@ rule all:
     input: 
         expand(
             "data/cit/{sample_id}.cit",
-            sample_id = ['LB-HT-28s-HT-17_S17', 'LB-HT-28s-HT-18_S18']
+            sample_id = ['LB-HT-28s-HT-17_S17']
         ),
         # expand(
         #     "data/aligned_bam_{max_perread_sub_fraction}/{sample_id}.bam",
@@ -83,7 +83,7 @@ rule all:
         #     "data/aligned_bam/{sample_id}.bam.bai",
         #     sample_id = sample_ids
         # ),
-        'outputs/multiqc_report.html'
+        # 'outputs/multiqc_report.html'
 
 rule cat_fastqs:
     input: 
@@ -234,7 +234,6 @@ rule gedi_index_genome:
     params:
         output_dir = config['gedi_index_dir']
     shell:
-        # if this breaks it's because I dropped -D from it
         f"""
             mkdir -p config/genomic
             gedi -e IndexGenome -organism homo_sapiens -version 115 -f config/genomic -o {config['gedi_index_dir']}/homo_sapiens.115.oml -nomapping
@@ -287,12 +286,20 @@ rule bam_to_cit:
         cit = "data/cit/{sample_id}.cit"
     container:
         config['container_path']
+    params:
+        scratch = lambda wildcards: f"/scratch/midway3/$USER/{wildcards.sample_id}_$SLURM_JOB_ID",
     resources:
-       runtime = 15,
+       runtime = 60,
        mem = "8G",
-    shell: # converts aligned and tagged .bam files to GRAND-SLAM's custom CIT format
+    shell: # converts aligned and tagged .bam files to GEDI's custom CIT format
         """
-        gedi -e Bam2CIT -p {output.cit} {input.bam}
+        mkdir -p {params.scratch}
+        cp {input.bam} {params.scratch}/
+        cp {input.bai} {params.scratch}/
+        INPUT_BASENAME=$(basename {input.bam})
+        gedi -e Bam2CIT -p {params.scratch}/output_temp.cit {params.scratch}/$INPUT_BASENAME
+        cp {params.scratch}/output_temp.cit {output.cit}
+        rm -rf {params.scratch}
         """
 
 rule grand_slam:
@@ -308,7 +315,9 @@ rule grand_slam:
         transcripts_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.tab",
         ref_oml = f"{config['gedi_index_dir']}/homo_sapiens.115.oml"
     output: 
-        slam_counts = "{sample_id}/slam_quant.tsv" # {prefix}.tsv
+        binom = "data/slam_quant/{sample_id}/grandslam.binom.tsv",
+        doublehit = "data/slam_quant/{sample_id}/grandslam.doublehit.tsv",
+        mismatches = "data/slam_quant/{sample_id}/grandslam.mismatches.tsv",
         # -full outputs
         # mismatches = "{sample_id}/slam_quant.mismatches.pdf",
         # double = "{sample_id}/slam_quant.double.pdf",
