@@ -3,21 +3,29 @@ From: eclipse-temurin:17-jdk-jammy
 
 %environment
     export PATH="/opt/gedi/tools/Gedi/target:$PATH"
+    export PATH="/opt/gedi/bin:$PATH"
 
 %post
     set -eux
-
+    # Install git, maven (linux package builder for GEDI), R, and dependencies
     apt-get update && apt-get install -y --no-install-recommends \
         git \
         maven \
         passwd \
+        r-base \
+        r-base-dev \
         && rm -rf /var/lib/apt/lists/*
-
+    
     INSTALL_DIR="/opt/gedi"
+
+    # Install required R packages
+    Rscript --vanilla -e 'install.packages(c("ggplot2", "plyr", "data.table"), repos="https://cloud.r-project.org")'
+
     mkdir -p $INSTALL_DIR
     cd $INSTALL_DIR
 
-    git clone https://github.com/erhard-lab/gedi.git
+    # clone GEDI version 1.0.6a (Apr 2024) with no commit history (--depth 1)
+    git clone --branch Gedi_1.0.6a --depth 1 https://github.com/erhard-lab/gedi.git
 
     mkdir bin
     cd bin
@@ -26,9 +34,6 @@ From: eclipse-temurin:17-jdk-jammy
 
     useradd -m -s /bin/bash gediuser
     chown -R gediuser:gediuser /opt/gedi
-
-%environment
-    export PATH="/opt/gedi/bin:$PATH"
 
 %runscript
     exec gedi "$@"

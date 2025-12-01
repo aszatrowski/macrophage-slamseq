@@ -1,7 +1,7 @@
 # paths to data and reference genomes
 assembly_path: '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/GRCh38.primary_assembly.genome.fa'
 data_path: '/project/lbarreiro/DATA/SLAM-seq/pilot_2025.08.19/FastX'
-container_path: '/project/lbarreiro/USERS/austin/containers/gedi_1.0.6a.sif'
+container_path: '/project/lbarreiro/USERS/austin/containers/gedi_R.sif'
 gedi_index_dir: 'config/genomic'
 # star configurations:
 read_length: 100  # or 150, 75, etc.
