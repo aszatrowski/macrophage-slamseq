@@ -4,26 +4,15 @@ configfile: "config.yaml"
 # will want to add figure generation to this
 localrules: cat_fastqs, index_bam, mark_control_samples, multiqc
 
-LANES = [5, 6, 7, 8]
-DONORS = ["donor1_rep2"]
-sample_ids = config['donor_sample_ids']['donor1_rep2']
-
+DONORS = ['donor1_rep2']
+sample_ids = [sample for donor in DONORS for sample in config['donor_sample_ids'][donor]]
 rule all:
     input: 
-        # lambda w: expand("data/aligned_bam/{sample_id}.bam",
-        #                              sample_id=[s for s in config["donor_sample_ids"]["donor1_rep2"] 
-        #                                     if s != config["control_sample_ids"]["donor1_rep2"]]),
-        # lambda w: expand("data/aligned_bam/{sample_id}.bam.bai",
-        #                              sample_id=[s for s in config["donor_sample_ids"]["donor1_rep2"] 
-        #                                     if s != config["control_sample_ids"]["donor1_rep2"]]),
-        # # Control sample_id (with .no4sU suffix)
-        # lambda w: f"data/no4sU_tagged/{config['control_sample_ids']["donor1_rep2"]}.no4sU.bam",
-        # lambda w: f"data/no4sU_tagged/{config['control_sample_ids']["donor1_rep2"]}.no4sU.bam.bai",
         expand(
             "data/cit_sample_sets/{donor}.cit",
             donor = DONORS
-        )
-        # 'outputs/multiqc_report.html'
+        ),
+        'outputs/multiqc_report.html'
 
 rule cat_fastqs:
     input: 
@@ -31,14 +20,14 @@ rule cat_fastqs:
             f"{config['data_path']}/{{sample_id}}_L{{seq_lane}}_R{{end}}_001.fastq.gz",  # ← double braces
             sample_id=wildcards.sample_id,
             end=wildcards.end,
-            seq_lane=[f"{l:03d}" for l in LANES]
+            seq_lane=[f"{l:03d}" for l in config['sequencing_lanes']]
         )
     output: 
         temp('data/fastq_merged/{sample_id}_R{end}_001.fastq.gz')
     shell: 
         "cat {input} > {output}"
 
-rule process_fastp:
+rule fastp:
     input: 
         r1 = 'data/fastq_merged/{sample_id}_R1_001.fastq.gz',
         r2 = 'data/fastq_merged/{sample_id}_R2_001.fastq.gz'
@@ -91,22 +80,22 @@ rule build_star_index:
         >> {log} 2>&1
         """ 
 
-rule star_align:
+rule star:
     input: 
         fastq_r1 = 'data/trimmed/{sample_id}_R1_001.fastq.gz',
         fastq_r2 = 'data/trimmed/{sample_id}_R2_001.fastq.gz',
         index = '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/STAR'
     output:
-        aligned_bam = 'data/aligned_bam_{max_perread_sub_fraction}/{sample_id}.bam',
-        stats = 'logs/star/qc/{sample_id}_{max_perread_sub_fraction}.Log.final.out'
+        aligned_bam = 'data/aligned_bam/{sample_id}.bam',
+        stats = 'logs/star/qc/{sample_id}.Log.final.out'
     params:
         # turns out these operations are MASSIVELY IO limited, so we'll copy everything to scratch, where it won't compete for RW access
         scratch = lambda wildcards: f"/scratch/midway3/$USER/{wildcards.sample_id}_$SLURM_JOB_ID",
-        # max_perread_sub_fraction = 0.25
+        max_perread_sub_fraction = 0.25
     log:
-        "logs/star/{sample_id}_{max_perread_sub_fraction}.log" # alignment quality
+        "logs/star/{sample_id}.log" # alignment quality
     benchmark:
-        "benchmarks/{sample_id}.star_align_{max_perread_sub_fraction}.benchmark.txt"
+        "benchmarks/{sample_id}.star_align.benchmark.txt"
     threads: 8
     resources:
         job_name = lambda wildcards: f"{wildcards.sample_id}_align_star",
@@ -137,7 +126,7 @@ rule star_align:
             --runThreadN {threads} \
             --outFilterMismatchNmax 999 \
             --limitBAMsortRAM 16000000000 \
-            --outFilterMismatchNoverReadLmax {wildcards.max_perread_sub_fraction} \
+            --outFilterMismatchNoverReadLmax {params.max_perread_sub_fraction} \
             --outSAMtype BAM SortedByCoordinate \
             --outSAMattributes nM NM MD AS \
             --outFileNamePrefix {params.scratch}/ \
@@ -277,9 +266,8 @@ rule multiqc:
             filetype = ['json']
         ),
         expand(
-            'logs/star/qc/{sample_id}_{max_perread_sub_fraction}.Log.final.out',
+            'logs/star/qc/{sample_id}.Log.final.out',
             sample_id = sample_ids,
-            max_perread_sub_fraction = [0.25, 0.1]
         )
     output: 
         'outputs/multiqc_report.html'
