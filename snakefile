@@ -2,87 +2,27 @@
 configfile: "config.yaml"
 # these are so lightweight that they can be run directly on the login node; no need for slurm
 # will want to add figure generation to this
-localrules: cat_fastqs, index_bam, multiqc
-
-## CHOOSE FILES
-# find all sample files in the folder, and remove _R1_001 & _R2_001 since paired-end reads will be processed together
-# will need to update this to also get rid of lanes
-# sample_ids = [f.removesuffix('_R1_001.fastq.gz').removesuffix('_R2_001.fastq.gz') 
-#               for f in os.listdir('data/fastq_symlinks') 
-#               if f.endswith('.fastq.gz')][0:2]
-
-sample_ids = [
-    # 'LB-HT-28s-HT-01_S1',
-    # 'LB-HT-28s-HT-02_S2',
-    # 'LB-HT-28s-HT-03_S3',
-    # 'LB-HT-28s-HT-05_S5',
-    # 'LB-HT-28s-HT-06_S6',
-    # 'LB-HT-28s-HT-07_S7',
-    # 'LB-HT-28s-HT-08_S8',
-    # 'LB-HT-28s-HT-09_S9',
-    # 'LB-HT-28s-HT-10_S10',
-    # 'LB-HT-28s-HT-12_S12',
-    # 'LB-HT-28s-HT-16_S16',
-    'LB-HT-28s-HT-17_S17',# smallest fileset (collectively R1 6.5KB + R2 6.4KB); use this as a test BUT has no nascent transcripts and fails featureCounts
-    'LB-HT-28s-HT-18_S18',
-    'LB-HT-28s-JL-01_S19',
-    'LB-HT-28s-JL-02_S20',
-    'LB-HT-28s-JL-04_S22',
-    'LB-HT-28s-JL-05_S23',
-    'LB-HT-28s-JL-06_S24',
-    # 'LB-HT-28s-JL-07_S25',
-    'LB-HT-28s-JL-08_S26',
-    # 'LB-HT-28s-JL-09_S27'
-]
+localrules: cat_fastqs, index_bam, mark_control_samples, multiqc
 
 LANES = [5, 6, 7, 8]
-
-SAMPLE_METADATA = {
-    "LB-HT-28s-HT-01_S1": {"timepoint": 0, "donor": "1rep1"},
-    "LB-HT-28s-HT-02_S2": {"timepoint": 15, "donor": "1rep1"},
-    "LB-HT-28s-HT-03_S3": {"timepoint": 30, "donor": "1rep1"},
-    "LB-HT-28s-HT-05_S5": {"timepoint": 60, "donor": "1rep1"},
-    "LB-HT-28s-HT-06_S6": {"timepoint": 90, "donor": "1rep1"},
-    "LB-HT-28s-HT-07_S7": {"timepoint": 105, "donor": "1rep1"},
-    "LB-HT-28s-HT-08_S8": {"timepoint": 120, "donor": "1rep1"},
-    "LB-HT-28s-HT-09_S9": {"timepoint": 120, "donor": "1rep1"},  # no4sU
-    "LB-HT-28s-HT-10_S10": {"timepoint": 15, "donor": "2rep1"},
-    "LB-HT-28s-HT-12_S12": {"timepoint": 45, "donor": "2rep1"},
-    "LB-HT-28s-HT-16_S16": {"timepoint": 105, "donor": "2rep1"},
-    "LB-HT-28s-HT-18_S18": {"timepoint": 120, "donor": "2rep1"},  # no4sU
-    "LB-HT-28s-JL-01_S19": {"timepoint": 0, "donor": "2rep2"},
-    "LB-HT-28s-JL-02_S20": {"timepoint": 15, "donor": "2rep2"},
-    "LB-HT-28s-JL-03_S21": {"timepoint": 30, "donor": "2rep2"},
-    "LB-HT-28s-JL-04_S22": {"timepoint": 45, "donor": "2rep2"},
-    "LB-HT-28s-JL-05_S23": {"timepoint": 60, "donor": "2rep2"},
-    "LB-HT-28s-JL-06_S24": {"timepoint": 75, "donor": "2rep2"},
-    "LB-HT-28s-JL-07_S25": {"timepoint": 90, "donor": "2rep2"},
-    "LB-HT-28s-JL-08_S26": {"timepoint": 105, "donor": "2rep2"},
-    "LB-HT-28s-JL-09_S27": {"timepoint": 120, "donor": "2rep2"}
-}
-
-# DONORS = ["1rep1", "2rep1", "2rep2"]
-DONORS = ["2rep2"]
-
-def get_donor_samples(donor):
-    return [sample_id for sample_id, meta in SAMPLE_METADATA.items() 
-            if meta["donor"] == donor]
+DONORS = ["donor1_rep2"]
+sample_ids = config['donor_sample_ids']['donor1_rep2']
 
 rule all:
     input: 
+        # lambda w: expand("data/aligned_bam/{sample_id}.bam",
+        #                              sample_id=[s for s in config["donor_sample_ids"]["donor1_rep2"] 
+        #                                     if s != config["control_sample_ids"]["donor1_rep2"]]),
+        # lambda w: expand("data/aligned_bam/{sample_id}.bam.bai",
+        #                              sample_id=[s for s in config["donor_sample_ids"]["donor1_rep2"] 
+        #                                     if s != config["control_sample_ids"]["donor1_rep2"]]),
+        # # Control sample_id (with .no4sU suffix)
+        # lambda w: f"data/no4sU_tagged/{config['control_sample_ids']["donor1_rep2"]}.no4sU.bam",
+        # lambda w: f"data/no4sU_tagged/{config['control_sample_ids']["donor1_rep2"]}.no4sU.bam.bai",
         expand(
-            "data/cit/{sample_id}.cit",
-            sample_id = ['LB-HT-28s-HT-17_S17']
-        ),
-        # expand(
-        #     "data/aligned_bam_{max_perread_sub_fraction}/{sample_id}.bam",
-        #     sample_id = sample_ids,
-        #     max_perread_sub_fraction = [0.25, 0.1]
-        # ),
-        # expand(
-        #     "data/aligned_bam/{sample_id}.bam.bai",
-        #     sample_id = sample_ids
-        # ),
+            "data/cit_sample_sets/{donor}.cit",
+            donor = DONORS
+        )
         # 'outputs/multiqc_report.html'
 
 rule cat_fastqs:
@@ -249,71 +189,55 @@ rule index_bam:
         samtools index --bai {input} -o {output}
         """
 
-# rule remove_dels:
-#     input: 
-#         bam = "data/aligned_bam/{sample_id}.bam",
-#         bai = "data/aligned_bam/{sample_id}.bam.bai"
-#     output: 
-#         bam_no_del = "data/bam_no_del/{sample_id}.bam",
-#         bai_no_del = "data/bam_no_del/{sample_id}.bam.bai"
-#     threads: 4
-#     resources:
-#        runtime = 15,
-#        mem = "4G",
-#     shell: 
-#         r"""
-#         samtools view -h {input.bam} | \
-#         awk '!/\^[ACGTN]/ || /^@/ {{print}}' | \
-#         samtools view -h -bS | \
-#         samtools sort -@ {threads} > {output.bam_no_del}
-#         samtools index --bai {output.bam_no_del} -o {output.bai_no_del}
-#         """
+rule mark_control_samples:
+    # while this rule appears general, it is only required for the no4sU samples as called in the second step
+    input:
+        bam="data/aligned_bam/{sample_id}.bam",
+        bai="data/aligned_bam/{sample_id}.bam.bai"
+    output:
+        bam="data/no4sU_tagged/{sample_id}.no4sU.bam",
+        bai="data/no4sU_tagged/{sample_id}.no4sU.bam.bai"
+    shell:
+        """
+        mkdir -p data/no4sU_tagged
+        ln -sf $(realpath {input.bam}) {output.bam}
+        ln -sf $(realpath {input.bai}) {output.bai}
+        """
 
 rule bam_to_cit:
     input:
-        bam = "data/aligned_bam/{sample_id}.bam",
-        bai = "data/aligned_bam/{sample_id}.bam.bai",
-        # GEDI index files
-        fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.fasta",
-        fi = f"{config['gedi_index_dir']}/homo_sapiens.115.fi",
-        genes_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.genes.tab",
-        gtf = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf",
-        index_cit = f"{config['gedi_index_dir']}/homo_sapiens.115.index.cit",
-        transcripts_fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.fasta",
-        transcripts_fi = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.fi",
-        transcripts_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.tab"
-    output: 
-        cit = "data/cit/{sample_id}.cit"
+        bams_regular = lambda w: expand(
+            "data/aligned_bam/{sample_id}.bam",
+            sample_id=[s for s in config["donor_sample_ids"][w.donor] 
+                if s != config["control_sample_ids"][w.donor]]
+        ),
+        bais_regular = lambda w: expand(
+            "data/aligned_bam/{sample_id}.bam.bai",
+            sample_id=[s for s in config["donor_sample_ids"][w.donor] 
+                if s != config["control_sample_ids"][w.donor]]
+        ),
+        bam_control = lambda w: f"data/no4sU_tagged/{config['control_sample_ids'][w.donor]}.no4sU.bam",
+        bai_control = lambda w: f"data/no4sU_tagged/{config['control_sample_ids'][w.donor]}.no4sU.bam.bai",
+        # GEDI INDEX FILES
+        index = rules.gedi_index_genome.output
+    output:
+        cit_sample_set = "data/cit_sample_sets/{donor}.cit"
     container:
-        config['container_path']
-    params:
-        scratch = lambda wildcards: f"/scratch/midway3/$USER/{wildcards.sample_id}_$SLURM_JOB_ID",
+        config["container_path"]
     resources:
-       runtime = 60,
-       mem = "8G",
-    shell: # converts aligned and tagged .bam files to GEDI's custom CIT format
+        mem = "8G",
+        runtime = 60
+    shell:
         """
-        mkdir -p {params.scratch}
-        cp {input.bam} {params.scratch}/
-        cp {input.bai} {params.scratch}/
-        INPUT_BASENAME=$(basename {input.bam})
-        gedi -e Bam2CIT -p {params.scratch}/output_temp.cit {params.scratch}/$INPUT_BASENAME
-        cp {params.scratch}/output_temp.cit {output.cit}
-        rm -rf {params.scratch}
+        Bam2CIT \
+            {output.cit_sample_set} \
+            {input.bams_regular} {input.bam_control} \
         """
 
 rule grand_slam:
     input: 
         sample_cit = "data/cit/{sample_id}.cit",
-        fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.fasta",
-        fi = f"{config['gedi_index_dir']}/homo_sapiens.115.fi",
-        genes_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.genes.tab",
-        gtf = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf",
-        index_cit = f"{config['gedi_index_dir']}/homo_sapiens.115.index.cit",
-        transcripts_fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.fasta",
-        transcripts_fi = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.fi",
-        transcripts_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.tab",
-        ref_oml = f"{config['gedi_index_dir']}/homo_sapiens.115.oml"
+        index = rules.gedi_index_genome.output
     output: 
         binom = "data/slam_quant/{sample_id}/grandslam.binom.tsv",
         doublehit = "data/slam_quant/{sample_id}/grandslam.doublehit.tsv",
@@ -343,6 +267,7 @@ rule grand_slam:
             -nthreads {{threads}}
             -introns
             -progress
+            # add -no4sU pattern
         """
 rule multiqc:
     input: 

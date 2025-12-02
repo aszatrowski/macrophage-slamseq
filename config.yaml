@@ -6,3 +6,49 @@ gedi_index_dir: 'config/genomic'
 # star configurations:
 read_length: 100  # or 150, 75, etc.
 genomeSAindexNbases: 14  # 14 for human/mouse, adjust for other organisms
+
+donors:
+  - donor1_rep1
+  - donor2_rep1
+  - donor1_rep2 
+
+# Map each donor to their sample IDs and timepoints
+donor_sample_ids:
+  donor1_rep1: [
+    "LB-HT-28s-HT-01_S1",
+    "LB-HT-28s-HT-02_S2",
+    "LB-HT-28s-HT-03_S3",
+    "LB-HT-28s-HT-04_S4",
+    "LB-HT-28s-HT-05_S5",
+    "LB-HT-28s-HT-06_S6",
+    "LB-HT-28s-HT-07_S7",
+    "LB-HT-28s-HT-08_S8",
+    "LB-HT-28s-HT-09_S9",
+  ]
+  donor2_rep1: [
+    "LB-HT-28s-HT-10_S10",
+    "LB-HT-28s-HT-11_S11",
+    "LB-HT-28s-HT-12_S12",
+    "LB-HT-28s-HT-13_S13",
+    "LB-HT-28s-HT-14_S14",
+    "LB-HT-28s-HT-15_S15",
+    "LB-HT-28s-HT-16_S16",
+    "LB-HT-28s-HT-17_S17",
+    "LB-HT-28s-HT-18_S18",
+  ]
+  donor1_rep2: [
+    "LB-HT-28s-JL-01_S19",
+    "LB-HT-28s-JL-02_S20",
+    # "LB-HT-28s-JL-03_S21",
+    "LB-HT-28s-JL-04_S22",
+    "LB-HT-28s-JL-05_S23",
+    "LB-HT-28s-JL-06_S24",
+    "LB-HT-28s-JL-07_S25",
+    "LB-HT-28s-JL-08_S26",
+    "LB-HT-28s-JL-09_S27",
+  ]
+
+control_sample_ids:
+  donor1_rep1: "LB-HT-28s-HT-09_S9"
+  donor2_rep1: "LB-HT-28s-HT-18_S18"
+  donor1_rep2: "LB-HT-28s-HT-09_S9"
