@@ -214,8 +214,8 @@ rule bam_to_cit:
     container:
         config["container_path"]
     resources:
-        mem = "8G",
-        runtime = 60
+        mem = "12G",
+        runtime = 90
     shell:
         """
         Bam2CIT \
