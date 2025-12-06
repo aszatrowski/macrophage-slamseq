@@ -214,23 +214,23 @@ rule bam_to_cit:
     container:
         config["container_path"]
     resources:
-        mem = "12G",
-        runtime = 90
+        mem = "20G",
+        runtime = 360 # 6 hours in minutes
     shell:
+        # gedi -e Bam2CIT -p  data/cit/s17_s18_test.cit data/aligned_bam/LB-HT-28s-HT-17_S17.bam data/aligned_bam/LB-HT-28s-HT-18_S18.bam
+        # does not run multithreaded; speeds are the same
         """
-        Bam2CIT \
-            {output.cit_sample_set} \
-            {input.bams_regular} {input.bam_control} \
+        gedi -e Bam2CIT -p {output.cit_sample_set} {input.bams_regular} {input.bam_control}
         """
 
 rule grand_slam:
     input: 
-        sample_cit = "data/cit/{sample_id}.cit",
+        cit_sample_set = "data/cit_sample_set/{donor}.cit", # will need to update with donor
         index = rules.gedi_index_genome.output
     output: 
-        binom = "data/slam_quant/{sample_id}/grandslam.binom.tsv",
-        doublehit = "data/slam_quant/{sample_id}/grandslam.doublehit.tsv",
-        mismatches = "data/slam_quant/{sample_id}/grandslam.mismatches.tsv",
+        binom = "data/slam_quant/{donor}/grandslam.binom.tsv",
+        doublehit = "data/slam_quant/{donor}/grandslam.doublehit.tsv",
+        mismatches = "data/slam_quant/{donor}/grandslam.mismatches.tsv",
         # -full outputs
         # mismatches = "{sample_id}/slam_quant.mismatches.pdf",
         # double = "{sample_id}/slam_quant.double.pdf",
@@ -243,20 +243,18 @@ rule grand_slam:
     container:
         config['container_path']
     resources:
-       runtime = 30,
+       runtime = 120,
        mem = "8G",
-    log:
-        "logs/gedi/slam/{sample_id}.log"
     shell: 
-        f"""
+        """
             gedi -e Slam \
-            -genomic {{input.ref_oml}} \
-            -reads data/aligned_bam/{{input.sample_cit}}
-            -prefix data/slam_quant/LB-HT-28s-HT-18_S18/grandslam
-            -nthreads {{threads}}
-            -introns
-            -progress
-            # add -no4sU pattern
+            -genomic {input.index.oml} \
+            -reads {input.cit_sample_set} \
+            -prefix data/slam_quant/{donor}/grand_slam \
+            -nthreads {threads} \
+            -introns \
+            -no4sUpattern no4sU \
+            -progress \
         """
 rule multiqc:
     input: 

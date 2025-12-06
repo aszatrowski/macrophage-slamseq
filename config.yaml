@@ -39,7 +39,7 @@ donor_sample_ids:
   donor1_rep2: [
     "LB-HT-28s-JL-01_S19",
     "LB-HT-28s-JL-02_S20",
-    # "LB-HT-28s-JL-03_S21",
+    "LB-HT-28s-JL-03_S21",
     "LB-HT-28s-JL-04_S22",
     "LB-HT-28s-JL-05_S23",
     "LB-HT-28s-JL-06_S24",
