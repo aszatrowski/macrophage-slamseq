@@ -59,35 +59,6 @@ rule fastp:
             "--detect_adapter_for_pe " # dynamically detect adapter sequences
         )
 
-rule build_star_index:
-    input:
-        fasta = config["assembly_path"],
-        gtf = "data/gencode_gtf/gencode.v49.primary_assembly.gtf"
-    output:
-        index=directory("data/star_genome_index")
-    params:
-        sjdbOverhang=config.get("read_length", 100) - 1,
-        genomeSAindexNbases=config.get("genomeSAindexNbases", 14)
-    threads: 8
-    resources:
-        mem_mb=35000,
-        runtime = 180
-    log:
-        "logs/star/index_genome.log"
-    shell:
-        """
-        mkdir -p {output.index}
-        
-        STAR --runMode genomeGenerate \
-            --genomeDir {output.index} \
-            --genomeFastaFiles {input.fasta} \
-            --sjdbGTFfile {input.gtf} \
-            --sjdbOverhang {params.sjdbOverhang} \
-            --genomeSAindexNbases {params.genomeSAindexNbases} \
-            --runThreadN {threads} \
-        >> {log} 2>&1
-        """ 
-
 rule star:
     input: 
         fastq_r1 = 'data/trimmed/{sample_id}_R1_001.fastq.gz',
