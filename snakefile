@@ -2,14 +2,22 @@
 configfile: "config.yaml"
 # these are so lightweight that they can be run directly on the login node; no need for slurm
 # will want to add figure generation to this
-localrules: cat_fastqs, index_bam, mark_control_samples, multiqc
+localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, mark_no4sU_samples, multiqc
 
 DONORS = ['donor1_rep2']
-sample_ids = [sample for donor in DONORS for sample in config['donor_sample_ids'][donor]]
+# sample_ids = [sample for donor in DONORS for sample in config['donor_sample_ids'][donor]]
+sample_ids = list(config['sample_ids'].keys())
+# print(sample_ids)
+
+
 rule all:
     input: 
+        # expand(
+        #     "data/cit_sample_sets/{donor}.cit",
+        #     donor = DONORS
+        # ),
         expand(
-            "data/cit_sample_sets/{donor}.cit",
+            "data/slam_quant/{donor}/grandslam.tsv",
             donor = DONORS
         ),
         'outputs/multiqc_report.html'
@@ -96,7 +104,8 @@ rule star:
         "logs/star/{sample_id}.log" # alignment quality
     benchmark:
         "benchmarks/{sample_id}.star_align.benchmark.txt"
-    threads: 8
+    threads:
+        8
     resources:
         job_name = lambda wildcards: f"{wildcards.sample_id}_align_star",
         mem = "32G",
@@ -178,84 +187,118 @@ rule index_bam:
         samtools index --bai {input} -o {output}
         """
 
-rule mark_control_samples:
-    # while this rule appears general, it is only required for the no4sU samples as called in the second step
+def get_sample_from_donor_timepoint(donor, timepoint):
+    """
+    Given a donor (as requested in rule all:), and a specific timepoint, retrieves the corresponding sample
+    """
+    for sample_id, info in config["sample_ids"].items():
+        if info["donor"] == donor and info["timepoint"] == int(timepoint):
+            return sample_id
+    raise ValueError(
+        f"No sample found for donor='{donor}' at timepoint='{timepoint}'. "
+        f"Available timepoints for {donor}: {get_donor_timepoints(donor)}"
+    )
+
+rule rename_with_donor_timepoint:
     input:
-        bam="data/aligned_bam/{sample_id}.bam",
-        bai="data/aligned_bam/{sample_id}.bam.bai"
+        bam=lambda w: f"data/aligned_bam/{get_sample_from_donor_timepoint(w.donor, w.timepoint)}.bam",
+        bai=lambda w: f"data/aligned_bam/{get_sample_from_donor_timepoint(w.donor, w.timepoint)}.bam.bai"
     output:
-        bam="data/no4sU_tagged/{sample_id}.no4sU.bam",
-        bai="data/no4sU_tagged/{sample_id}.no4sU.bam.bai"
+        bam="data/donor_timepoint_symlinks/{donor}/{timepoint}m.bam",
+        bai="data/donor_timepoint_symlinks/{donor}/{timepoint}m.bam.bai"
     shell:
         """
-        mkdir -p data/no4sU_tagged
+        mkdir -p $(dirname {output.bam})
+        ln -sf {input.bam} {output.bam}
+        ln -sf {input.bai} {output.bai}
+        """
+
+rule mark_no4sU_samples:
+    input:
+        bam=lambda w: f"data/aligned_bam/{config['donor_controls'][w.donor]}.bam",
+        bai=lambda w: f"data/aligned_bam/{config['donor_controls'][w.donor]}.bam.bai",
+    output:
+        bam="data/donor_timepoint_symlinks/{donor}/control_no4sU.bam",
+        bai="data/donor_timepoint_symlinks/{donor}/control_no4sU.bam.bai"
+    shell:
+        """
+        mkdir -p data/timepoint_bams
         ln -sf $(realpath {input.bam}) {output.bam}
         ln -sf $(realpath {input.bai}) {output.bai}
         """
 
+def get_donor_timepoints(donor):
+    """Get all timepoints that exist for a given donor"""
+    timepoints = [info["timepoint"] for sample_id, info in config["sample_ids"].items() 
+                  if info["donor"] == donor]
+    return sorted(set(timepoints))
+
 rule bam_to_cit:
     input:
-        bams_regular = lambda w: expand(
-            "data/aligned_bam/{sample_id}.bam",
-            sample_id=[s for s in config["donor_sample_ids"][w.donor] 
-                if s != config["control_sample_ids"][w.donor]]
+        bams = lambda w: expand(
+            "data/donor_timepoint_symlinks/{donor}/{timepoint}m.bam",
+            donor = w.donor,
+            timepoint = get_donor_timepoints(w.donor)
         ),
-        bais_regular = lambda w: expand(
-            "data/aligned_bam/{sample_id}.bam.bai",
-            sample_id=[s for s in config["donor_sample_ids"][w.donor] 
-                if s != config["control_sample_ids"][w.donor]]
+        bais = lambda w: expand(
+            "data/donor_timepoint_symlinks/{donor}/{timepoint}m.bam.bai",
+            donor = w.donor,
+            timepoint = get_donor_timepoints(w.donor)
         ),
-        bam_control = lambda w: f"data/no4sU_tagged/{config['control_sample_ids'][w.donor]}.no4sU.bam",
-        bai_control = lambda w: f"data/no4sU_tagged/{config['control_sample_ids'][w.donor]}.no4sU.bam.bai",
+        # ADD IN CONTROL NO4SU FILE
+        no4sU_bam="data/donor_timepoint_symlinks/{donor}/control_no4sU.bam",
+        no4sU_bai="data/donor_timepoint_symlinks/{donor}/control_no4sU.bam.bai",
         # GEDI INDEX FILES
         index = rules.gedi_index_genome.output
     output:
-        cit_sample_set = "data/cit_sample_sets/{donor}.cit"
+        cit_sample_set = "data/cit_sample_sets/{donor}.cit",
     container:
         config["container_path"]
     resources:
         mem = "20G",
         runtime = 360 # 6 hours in minutes
+    benchmark:
+        "benchmarks/{donor}.bam_to_cit.benchmark.txt"
     shell:
         # gedi -e Bam2CIT -p  data/cit/s17_s18_test.cit data/aligned_bam/LB-HT-28s-HT-17_S17.bam data/aligned_bam/LB-HT-28s-HT-18_S18.bam
         # does not run multithreaded; speeds are the same
         """
-        gedi -e Bam2CIT -p {output.cit_sample_set} {input.bams_regular} {input.bam_control}
+        gedi -e Bam2CIT -p {output.cit_sample_set} {input.bams} {input.no4sU_bam}
         """
 
 rule grand_slam:
     input: 
-        cit_sample_set = "data/cit_sample_set/{donor}.cit", # will need to update with donor
-        index = rules.gedi_index_genome.output
+        cit_sample_set = "data/cit_sample_sets/{donor}.cit",
+        index_oml = rules.gedi_index_genome.output.oml
     output: 
-        binom = "data/slam_quant/{donor}/grandslam.binom.tsv",
-        doublehit = "data/slam_quant/{donor}/grandslam.doublehit.tsv",
-        mismatches = "data/slam_quant/{donor}/grandslam.mismatches.tsv",
-        # -full outputs
-        # mismatches = "{sample_id}/slam_quant.mismatches.pdf",
-        # double = "{sample_id}/slam_quant.double.pdf",
-        # mismatchpos = "{sample_id}/slam_quant.mismatchpos.pdf",
-        # mismatchposzoomed = "{sample_id}/slam_quant.mismatchposzoomed.pdf",
-        # binomRates = "{sample_id}/slam_quant.binomRates.png",
-        # mismatches = "{sample_id}/slam_quant.mismatches.pdf",
-        # mismatches = "{sample_id}/slam_quant.mismatches.pdf",
-        # mismatches = "{sample_id}/slam_quant.mismatches.pdf"
+        nascent_counts = "data/slam_quant/{donor}/grandslam.tsv",
+        mismatches_tsv = "data/slam_quant/{donor}/grandslam.mismatches.tsv",
+        mismatches_pdf = "data/slam_quant/{donor}/grandslam.mismatches.pdf",
+        mismatch_positions = "data/slam_quant/{donor}/grandslam.mismatchpos.pdf",
+        ntr_stats = "data/slam_quant/{donor}/grandslam.ntrstat.tsv",
     container:
         config['container_path']
     resources:
-       runtime = 120,
-       mem = "8G",
+       runtime = 360,
+       mem = "16G",
+    threads:
+        16,
+    benchmark:
+        "benchmarks/{donor}.grandslam.benchmark.txt"
     shell: 
         """
             gedi -e Slam \
-            -genomic {input.index.oml} \
+            -genomic {input.index_oml} \
             -reads {input.cit_sample_set} \
-            -prefix data/slam_quant/{donor}/grand_slam \
+            -prefix data/slam_quant/{wildcards.donor}/grand_slam \
             -nthreads {threads} \
             -introns \
             -no4sUpattern no4sU \
             -progress \
+            -full \
+            -plot
         """
+
 rule multiqc:
     input: 
         expand(
@@ -275,5 +318,4 @@ rule multiqc:
             'data/fastp_reports logs/star ' # switch these to ALL for consistency in multiqc
             '--force ' # overwrite existing report; otherwise it will attach a suffix that snakemake won't detect
             '--outdir outputs'
-            # future: --ignore-samples for ones that failed to process
         )
