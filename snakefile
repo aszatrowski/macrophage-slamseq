@@ -252,18 +252,28 @@ rule bam_to_cit:
         index = rules.gedi_index_genome.output
     output:
         cit_sample_set = "data/cit_sample_sets/{donor}.cit",
+    params:
+        scratch = lambda wildcards: f"/scratch/midway3/$USER/{wildcards.donor}_$SLURM_JOB_ID",
     container:
         config["container_path"]
     resources:
         mem = "20G",
-        runtime = 360 # 6 hours in minutes
+        runtime = 540 # 9 hours in minutes
     benchmark:
         "benchmarks/{donor}.bam_to_cit.benchmark.txt"
     shell:
         # gedi -e Bam2CIT -p  data/cit/s17_s18_test.cit data/aligned_bam/LB-HT-28s-HT-17_S17.bam data/aligned_bam/LB-HT-28s-HT-18_S18.bam
         # does not run multithreaded; speeds are the same
         """
-        gedi -e Bam2CIT -p {output.cit_sample_set} {input.bams} {input.no4sU_bam}
+        echo "Copying to scratch..."
+        cp {input.bams} {input.bais} {input.no4sU_bam} {input.no4sU_bai} {input.index} {params.scratch}/
+        echo "Copy complete."
+        cd {params.scratch}
+        echo "Beginning CIT conversion..."
+        gedi -e Bam2CIT -p output.cit $(basename {input.bams}) $(basename {input.no4sU_bam})
+        echo "Conversion complete."
+        echo "Copying output back..."
+        cp output.cit {output.cit_sample_set}
         """
 
 rule grand_slam:
