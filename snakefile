@@ -209,8 +209,8 @@ rule rename_with_donor_timepoint:
     shell:
         """
         mkdir -p $(dirname {output.bam})
-        ln -sf {input.bam} {output.bam}
-        ln -sf {input.bai} {output.bai}
+        ln -sf $(realpath {input.bam}) {output.bam}
+        ln -sf $(realpath {input.bai}) {output.bai}
         """
 
 rule mark_no4sU_samples:
@@ -222,7 +222,7 @@ rule mark_no4sU_samples:
         bai="data/donor_timepoint_symlinks/{donor}/control_no4sU.bam.bai"
     shell:
         """
-        mkdir -p data/timepoint_bams
+        mkdir -p $(dirname {output.bam})
         ln -sf $(realpath {input.bam}) {output.bam}
         ln -sf $(realpath {input.bai}) {output.bai}
         """
