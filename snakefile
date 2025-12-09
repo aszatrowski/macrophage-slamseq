@@ -1,3 +1,4 @@
+import os
 ## CONFIG:
 configfile: "config.yaml"
 # these are so lightweight that they can be run directly on the login node; no need for slurm
@@ -106,9 +107,10 @@ rule star:
             --runThreadN {threads} \
             --outFilterMismatchNmax 999 \
             --limitBAMsortRAM 16000000000 \
+            --alignEndsType EndToEnd \
             --outFilterMismatchNoverReadLmax {params.max_perread_sub_fraction} \
             --outSAMtype BAM SortedByCoordinate \
-            --outSAMattributes nM NM MD AS \
+            --outSAMattributes MD NH AS \
             --outFileNamePrefix {params.scratch}/ \
             2> {log}
         
@@ -219,29 +221,30 @@ rule bam_to_cit:
         # ADD IN CONTROL NO4SU FILE
         no4sU_bam="data/donor_timepoint_symlinks/{donor}/control_no4sU.bam",
         no4sU_bai="data/donor_timepoint_symlinks/{donor}/control_no4sU.bam.bai",
-        # GEDI INDEX FILES
-        index = rules.gedi_index_genome.output
     output:
         cit_sample_set = "data/cit_sample_sets/{donor}.cit",
     params:
         scratch = lambda wildcards: f"/scratch/midway3/$USER/{wildcards.donor}_$SLURM_JOB_ID",
+        bam_basenames = lambda w, input: " ".join([os.path.basename(b) for b in input.bams])
     container:
         config["container_path"]
     resources:
-        mem = "20G",
-        runtime = 540 # 9 hours in minutes
+        mem = "24G",
+        runtime = 840 # 14 hours in minutes
     benchmark:
         "benchmarks/{donor}.bam_to_cit.benchmark.txt"
     shell:
-        # gedi -e Bam2CIT -p  data/cit/s17_s18_test.cit data/aligned_bam/LB-HT-28s-HT-17_S17.bam data/aligned_bam/LB-HT-28s-HT-18_S18.bam
-        # does not run multithreaded; speeds are the same
         """
         echo "Copying to scratch..."
-        cp {input.bams} {input.bais} {input.no4sU_bam} {input.no4sU_bai} {input.index} {params.scratch}/
+        mkdir -p {params.scratch}
+        cp {input.bams} {input.bais} {input.no4sU_bam} {input.no4sU_bai} {params.scratch}/
         echo "Copy complete."
         cd {params.scratch}
         echo "Beginning CIT conversion..."
-        gedi -e Bam2CIT -p output.cit $(basename {input.bams}) $(basename {input.no4sU_bam})
+        cd {params.scratch}
+        gedi -e Bam2CIT output.cit \
+            {params.bam_basenames} \
+            $(basename {input.no4sU_bam})
         echo "Conversion complete."
         echo "Copying output back..."
         cp output.cit {output.cit_sample_set}
