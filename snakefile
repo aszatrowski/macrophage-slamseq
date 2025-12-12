@@ -263,7 +263,7 @@ rule grand_slam:
     container:
         config['container_path']
     resources:
-       runtime = 360,
+       runtime = 480, # 8 hours in minutes
        mem = "16G",
     threads:
         16,
@@ -275,9 +275,11 @@ rule grand_slam:
             -genomic {input.index_oml} \
             -reads {input.cit_sample_set} \
             -prefix data/slam_quant/{wildcards.donor}/grand_slam \
-            -nthreads {threads} \
             -introns \
+            -trim5p 5 \
+            -trim3p 3 \
             -no4sUpattern no4sU \
+            -nthreads {threads} \
             -progress \
             -full \
             -plot
