@@ -225,11 +225,13 @@ rule bam_to_cit:
         cit_sample_set = "data/cit_sample_sets/{donor}.cit",
     params:
         scratch = lambda wildcards: f"/scratch/midway3/$USER/{wildcards.donor}_$SLURM_JOB_ID",
-        bam_basenames = lambda w, input: " ".join([os.path.basename(b) for b in input.bams])
+        bam_basenames = lambda w, input: " ".join([os.path.basename(b) for b in input.bams]),
+        java_xmx=lambda w, resources: int(resources.mem_mb * 0.875 / 1024),  # 87.5% in GB
+        java_xms=lambda w, resources: max(4, int(resources.mem_mb * 0.125 / 1024))  # 12.5% in GB, min 4
     container:
         config["container_path"]
     resources:
-        mem = "24G",
+        mem_mb = 32000,
         runtime = 840 # 14 hours in minutes
     benchmark:
         "benchmarks/{donor}.bam_to_cit.benchmark.txt"
@@ -240,8 +242,9 @@ rule bam_to_cit:
         cp {input.bams} {input.bais} {input.no4sU_bam} {input.no4sU_bai} {params.scratch}/
         echo "Copy complete."
         cd {params.scratch}
+        echo "Setting Java max memory..."
+        export _JAVA_OPTIONS="-Xmx{params.java_xmx}g -Xms{params.java_xms}g"
         echo "Beginning CIT conversion..."
-        cd {params.scratch}
         gedi -e Bam2CIT output.cit \
             {params.bam_basenames} \
             $(basename {input.no4sU_bam})
@@ -260,17 +263,21 @@ rule grand_slam:
         mismatches_pdf = "data/slam_quant/{donor}/grandslam.mismatches.pdf",
         mismatch_positions = "data/slam_quant/{donor}/grandslam.mismatchpos.pdf",
         ntr_stats = "data/slam_quant/{donor}/grandslam.ntrstat.tsv",
+    params:
+        java_xmx=lambda w, resources: int(resources.mem_mb * 0.875 / 1024),  # 87.5% in GB
+        java_xms=lambda w, resources: max(4, int(resources.mem_mb * 0.125 / 1024))  # 12.5% in GB, min 4
     container:
         config['container_path']
     resources:
        runtime = 480, # 8 hours in minutes
-       mem = "16G",
+       mem_mb = 20000,
     threads:
         16,
     benchmark:
         "benchmarks/{donor}.grandslam.benchmark.txt"
     shell: 
         """
+            export _JAVA_OPTIONS="-Xmx{params.java_xmx}g -Xms{params.java_xms}g"
             gedi -e Slam \
             -genomic {input.index_oml} \
             -reads {input.cit_sample_set} \
