@@ -232,7 +232,7 @@ rule bam_to_cit:
         config["container_path"]
     resources:
         mem_mb = 32000,
-        runtime = 840 # 14 hours in minutes
+        runtime = 1440 # 20 hours in minutes
     benchmark:
         "benchmarks/{donor}.bam_to_cit.benchmark.txt"
     shell:
@@ -281,7 +281,7 @@ rule grand_slam:
             gedi -e Slam \
             -genomic {input.index_oml} \
             -reads {input.cit_sample_set} \
-            -prefix data/slam_quant/{wildcards.donor}/grand_slam \
+            -prefix data/slam_quant/{wildcards.donor}/grandslam \
             -introns \
             -trim5p 5 \
             -trim3p 3 \
