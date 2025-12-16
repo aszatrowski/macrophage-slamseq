@@ -3,18 +3,18 @@ assembly_path: '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/GR
 data_path: '/project/lbarreiro/DATA/SLAM-seq/pilot_2025.08.19/FastX'
 container_path: '/project/lbarreiro/USERS/austin/containers/gedi_R.sif'
 gedi_index_dir: 'config/genomic'
-# star configurations:
-read_length: 100  # or 150, 75, etc.
-genomeSAindexNbases: 14  # 14 for human/mouse, adjust for other organisms
 
 sequencing_lanes: [5, 6, 7, 8]
 
+# R1 adapter sequence, reverse complement (as it appears in the reads)
+adapter_sequence_r1_rc: 'AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTA'
+# R2 adapter sequence, reverse complement (as it appears in the reads)
+adapter_sequence_r2_rc: 'AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC'
 donors:
   - donor1_rep1
   - donor2_rep1
   - donor1_rep2
 
-# Direct sample -> donor/timepoint mapping
 sample_ids:
   LB-HT-28s-HT-01_S1:
     donor: donor1_rep1
@@ -25,9 +25,6 @@ sample_ids:
   LB-HT-28s-HT-03_S3:
     donor: donor1_rep1
     timepoint: 30
-  LB-HT-28s-HT-04_S4:
-    donor: donor1_rep1
-    timepoint: 45
   LB-HT-28s-HT-05_S5:
     donor: donor1_rep1
     timepoint: 60

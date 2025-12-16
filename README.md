@@ -1,4 +1,5 @@
 # SLAM-seq rotation project
+*January 2026*
 *Austin Szatrowski, based on a SLAMseq analysis pipeline by Jesse Lehman, Pai Lab @ UMass Med*
 
 ### Rulegraph:

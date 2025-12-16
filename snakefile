@@ -2,28 +2,23 @@ import os
 ## CONFIG:
 configfile: "config.yaml"
 # these are so lightweight that they can be run directly on the login node; no need for slurm
-# will want to add figure generation to this
 localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, mark_no4sU_samples, multiqc
 
 DONORS = ['donor1_rep2']
-# sample_ids = [sample for donor in DONORS for sample in config['donor_sample_ids'][donor]]
 sample_ids = list(config['sample_ids'].keys())
-# print(sample_ids)
-
 
 rule all:
     input: 
-        # expand(
-        #     "data/cit_sample_sets/{donor}.cit",
-        #     donor = DONORS
-        # ),
         expand(
-            "data/slam_quant/{donor}/grandslam.tsv",
+            "data/slam_quant/{donor}/grandslam.tsv.gz",
             donor = DONORS
         ),
-        'outputs/multiqc_report.html'
+        # 'outputs/multiqc_report.html'
 
 rule cat_fastqs:
+    """
+    Joins fastq files together from multiple sequencing lanes. Lanes are specified in config['sequencing_lanes'].
+    """
     input: 
         lambda wildcards: expand(
             f"{config['data_path']}/{{sample_id}}_L{{seq_lane}}_R{{end}}_001.fastq.gz",  # ← double braces
@@ -37,6 +32,11 @@ rule cat_fastqs:
         "cat {input} > {output}"
 
 rule fastp:
+    """
+    Runs fastp for quality control and adapter trimmming. fastp (https://github.com/OpenGene/fastp) is a faster alternative to fastqc + trimmomatic/cutadapt, and crucially only needs to be run once, rather than fastqc > trim fastqc. Though fastp can dynamically detect adapter sequences quite efficiently, in practice it misses bases on the ends, which introduces artificial mismatches which may reduce T>C substitution calling downstream, so manual specification is recommended.
+    The parameters are configurd for paired-end sequencing, so you'll need to modify if you have single-end. See the fastp docs for details.
+    Outputs an html webpage and a machine-readable json QC summary for each sample; multiqc will take the json as input for its own summary.
+    """
     input: 
         r1 = 'data/fastq_merged/{sample_id}_R1_001.fastq.gz',
         r2 = 'data/fastq_merged/{sample_id}_R2_001.fastq.gz'
@@ -45,6 +45,9 @@ rule fastp:
         r2 = temp('data/trimmed/{sample_id}_R2_001.fastq.gz'),
         html = "data/fastp_reports/{sample_id}.html",
         json = "data/fastp_reports/{sample_id}.json"
+    params:
+        adapter_sequence_r1 = config['adapter_sequence_r1_rc'],
+        adapter_sequence_r2 = config['adapter_sequence_r2_rc']
     threads: 4
     resources: 
         runtime = 75, # takes 45-50 min so far, adding a little buffer for bigger files
@@ -57,10 +60,14 @@ rule fastp:
             "--html {output.html} "
             "--json {output.json} "
             "--thread {threads} "
-            "--detect_adapter_for_pe " # dynamically detect adapter sequences
+            "--adapter_sequence={params.adapter_sequence_r1} "
+            "--adapter_sequence_r2={params.adapter_sequence_r2}"
         )
 
 rule star:
+    """
+    Uses STAR (https://github.com/alexdobin/STAR) to align the trimmed sequences.
+    STAR is heavily I/O limited during its complex computations, so I have snakemake copy all the necessary files to the /scratch/ filesystem, where they won't compute with everyone else's I/O. According to my basic """
     input: 
         fastq_r1 = 'data/trimmed/{sample_id}_R1_001.fastq.gz',
         fastq_r2 = 'data/trimmed/{sample_id}_R2_001.fastq.gz',
@@ -223,6 +230,7 @@ rule bam_to_cit:
         no4sU_bai="data/donor_timepoint_symlinks/{donor}/control_no4sU.bam.bai",
     output:
         cit_sample_set = "data/cit_sample_sets/{donor}.cit",
+        cit_metadata = "data/cit_sample_sets/{donor}.cit.metadata.json",
     params:
         scratch = lambda wildcards: f"/scratch/midway3/$USER/{wildcards.donor}_$SLURM_JOB_ID",
         bam_basenames = lambda w, input: " ".join([os.path.basename(b) for b in input.bams]),
@@ -237,30 +245,44 @@ rule bam_to_cit:
         "benchmarks/{donor}.bam_to_cit.benchmark.txt"
     shell:
         """
-        echo "Copying to scratch..."
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying to scratch..."
         mkdir -p {params.scratch}
         cp {input.bams} {input.bais} {input.no4sU_bam} {input.no4sU_bai} {params.scratch}/
-        echo "Copy complete."
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copy complete."
+
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Generating output paths..."
+        cit_output_path=$(realpath {output.cit_sample_set})
+        metadata_output_path=$(realpath {output.cit_metadata})
+        mkdir -p $(dirname $cit_output_path)
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Paths created."
+
         cd {params.scratch}
-        echo "Setting Java max memory..."
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Setting Java max memory..."
         export _JAVA_OPTIONS="-Xmx{params.java_xmx}g -Xms{params.java_xms}g"
-        echo "Beginning CIT conversion..."
-        gedi -e Bam2CIT output.cit \
+
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Beginning CIT conversion..."
+        gedi -e Bam2CIT -p output.cit \
             {params.bam_basenames} \
             $(basename {input.no4sU_bam})
-        echo "Conversion complete."
-        echo "Copying output back..."
-        cp output.cit {output.cit_sample_set}
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Conversion complete."
+
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying output back..."
+        cp output.cit $cit_output_path
+        cp output.cit.metadata.json $metadata_output_path
+        rm -rf {params.scratch}
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copy complete, scratch cleared."
         """
 
 rule grand_slam:
     input: 
         cit_sample_set = "data/cit_sample_sets/{donor}.cit",
+        cit_metadata = "data/cit_sample_sets/{donor}.cit.metadata.json",
         index_oml = rules.gedi_index_genome.output.oml
     output: 
-        nascent_counts = "data/slam_quant/{donor}/grandslam.tsv",
-        mismatches_tsv = "data/slam_quant/{donor}/grandslam.mismatches.tsv",
-        mismatches_pdf = "data/slam_quant/{donor}/grandslam.mismatches.pdf",
+        nascent_counts = "data/slam_quant/{donor}/grandslam.tsv.gz",
+        sub_rates = "data/slam_quant/{donor}/grandslam.rates.tsv",
+        mismatch_tsv = "data/slam_quant/{donor}/grandslam.mismatches.tsv",
+        mismatch_plot = "data/slam_quant/{donor}/grandslam.mismatches.pdf",
         mismatch_positions = "data/slam_quant/{donor}/grandslam.mismatchpos.pdf",
         ntr_stats = "data/slam_quant/{donor}/grandslam.ntrstat.tsv",
     params:
@@ -283,13 +305,12 @@ rule grand_slam:
             -reads {input.cit_sample_set} \
             -prefix data/slam_quant/{wildcards.donor}/grandslam \
             -introns \
-            -trim5p 5 \
-            -trim3p 3 \
             -no4sUpattern no4sU \
             -nthreads {threads} \
             -progress \
             -full \
-            -plot
+            -plot \
+            -progress
         """
 
 rule multiqc:
