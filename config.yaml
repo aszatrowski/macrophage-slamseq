@@ -1,20 +1,26 @@
-# paths to data and reference genomes
-assembly_path: '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/GRCh38.primary_assembly.genome.fa'
+# USER SPECIFIED:
+# path to directory containing fastq files
 data_path: '/project/lbarreiro/DATA/SLAM-seq/pilot_2025.08.19/FastX'
+# path to genome assembly for STAR alignment
+assembly_path: '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/GRCh38.primary_assembly.genome.fa'
+# path to container for GEDI
 container_path: '/project/lbarreiro/USERS/austin/containers/gedi_R.sif'
-gedi_index_dir: 'config/genomic'
 
+# Provide the lanes used in the sequencing run
 sequencing_lanes: [5, 6, 7, 8]
 
 # R1 adapter sequence, reverse complement (as it appears in the reads)
 adapter_sequence_r1_rc: 'AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTA'
 # R2 adapter sequence, reverse complement (as it appears in the reads)
 adapter_sequence_r2_rc: 'AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC'
+
+# identifiers for each donor (one complete set of timepoints + 1 no4sU control)
 donors:
   - donor1_rep1
   - donor2_rep1
   - donor1_rep2
 
+# In here, map each sample ID to a donor ID and a timepoint (make numeric, pipeline will attach units)
 sample_ids:
   LB-HT-28s-HT-01_S1:
     donor: donor1_rep1
@@ -89,4 +95,8 @@ donor_controls:
   donor2_rep1: "LB-HT-28s-HT-18_S18"
   donor1_rep2: "LB-HT-28s-HT-09_S9"
 
+# string to specify no4sU control. A "timepoint" in the sense that it gets added at the end of the filename where the timepoint would go, but doesn't represent a true point in time.
 control_timepoint: 'no4sU'
+
+# don't change this, it appears to be hard-coded in GEDI itself. Silly, I know.
+gedi_index_dir: 'config/genomic'
