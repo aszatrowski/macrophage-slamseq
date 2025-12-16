@@ -99,4 +99,4 @@ donor_controls:
 control_timepoint: 'no4sU'
 
 # don't change this, it appears to be hard-coded in GEDI itself. Silly, I know.
-gedi_index_dir: 'config/genomic'
+gedi_index_dir: 'data/gedi_index'

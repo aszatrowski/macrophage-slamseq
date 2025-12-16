@@ -173,8 +173,8 @@ rule gedi_index_genome:
         output_dir = config['gedi_index_dir']
     shell:
         f"""
-            mkdir -p config/genomic
-            gedi -e IndexGenome -organism homo_sapiens -version 115 -f config/genomic -o {config['gedi_index_dir']}/homo_sapiens.115.oml -nomapping
+            mkdir -p {config['gedi_index_dir']}
+            gedi -e IndexGenome -organism homo_sapiens -version 115 -f {config['gedi_index_dir']} -o {config['gedi_index_dir']}/homo_sapiens.115.oml -nomapping
         """
 
 rule index_bam:
@@ -339,8 +339,8 @@ rule grand_slam:
         # GEDI is a Java program, and by default Java only allocates 16GB of RAM for any running programs. For large samples, this will not be enough (job crashed several times), so we set an environment variable for this allocation (java_xmx) to 87.5% of the total RAM allocation for the job. The remaining 12.5% (or 4GB, whichever is larger) is reserved for the system.
         java_xmx=lambda w, resources: int(resources.mem_mb * 0.875 / 1024),  # 87.5% in GB
         java_xms=lambda w, resources: max(4, int(resources.mem_mb * 0.125 / 1024)),  # 12.5% in GB, min 4
-        trim5p = 8,
-        trim3p = 8,
+        trim5p = 10,
+        trim3p = 10,
     log:
         "logs/grandslam/{donor}.log"
     container:
@@ -366,6 +366,7 @@ rule grand_slam:
             -no4sUpattern control_no4sU \
             -nthreads {threads} \
             -plot \
+            -full \
             -progress >>{log} 2>&1
         """
 
