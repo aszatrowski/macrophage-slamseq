@@ -332,15 +332,17 @@ rule grand_slam:
         # Mismatch rates across all samples, with positions in the read. Often, there are artifactual mismatch spikes at the ends of reads that can be excluded with -trim5p and -trim3p
         mismatch_positions = "data/slam_quant/{donor}/grandslam.mismatchpos.pdf",
         # Same plot, but with narrower y-axis so spikes don't flatten everything else out
-        mismatch_positions = "data/slam_quant/{donor}/grandslam.mismatchposzoomed.pdf",
+        mismatch_positions_zoomed = "data/slam_quant/{donor}/grandslam.mismatchposzoomed.pdf",
         # Number of T>C mismatches, and nascent/old RNA fractions in each sample
         ntr_stats = "data/slam_quant/{donor}/grandslam.ntrstat.tsv",
     params:
         # GEDI is a Java program, and by default Java only allocates 16GB of RAM for any running programs. For large samples, this will not be enough (job crashed several times), so we set an environment variable for this allocation (java_xmx) to 87.5% of the total RAM allocation for the job. The remaining 12.5% (or 4GB, whichever is larger) is reserved for the system.
         java_xmx=lambda w, resources: int(resources.mem_mb * 0.875 / 1024),  # 87.5% in GB
-        java_xms=lambda w, resources: max(4, int(resources.mem_mb * 0.125 / 1024))  # 12.5% in GB, min 4
+        java_xms=lambda w, resources: max(4, int(resources.mem_mb * 0.125 / 1024)),  # 12.5% in GB, min 4
+        trim5p = 8,
+        trim3p = 8,
     log:
-        "logs/grand_slam/{donor}.log"
+        "logs/grandslam/{donor}.log"
     container:
         # Path to apptainer container for GEDI
         config['container_path']
@@ -353,18 +355,18 @@ rule grand_slam:
         "benchmarks/{donor}.grandslam.benchmark.txt"
     shell: 
         """
-            export _JAVA_OPTIONS="-Xmx{params.java_xmx}g -Xms{params.java_xms}g"
+            export _JAVA_OPTIONS="-Xmx{params.java_xmx}g -Xms{params.java_xms}g" &> {log}
             gedi -e Slam \
             -genomic {input.index_oml} \
             -reads {input.cit_sample_set} \
             -prefix data/slam_quant/{wildcards.donor}/grandslam \
             -introns \
-            -no4sUpattern no4sU \
+            -trim5p {params.trim5p} \
+            -trim3p {params.trim3p} \
+            -no4sUpattern control_no4sU \
             -nthreads {threads} \
-            -progress \
-            -full \
             -plot \
-            -progress
+            -progress >>{log} 2>&1
         """
 
 rule multiqc:
