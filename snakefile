@@ -85,7 +85,7 @@ rule star:
     input: 
         fastq_r1 = 'data/trimmed/{sample_id}_R1_001.fastq.gz',
         fastq_r2 = 'data/trimmed/{sample_id}_R2_001.fastq.gz',
-        index = '/project/lbarreiro/SHARED/REFERENCES/Homo_sapiens/GATK/GRCh38/STAR'
+        index = config['star_index_path']
     output:
         aligned_bam = 'data/aligned_bam/{sample_id}.bam',
         stats = 'logs/star/qc/{sample_id}.Log.final.out'
@@ -106,46 +106,41 @@ rule star:
         runtime = 240    # 4 hours in minutes
     shell:
         """
-        # Create local scratch directory
-        mkdir -p {params.scratch}
-        
-        # Copy input files to local scratch
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying inputs to local scratch..." >> {log} 2>&1
-        cp {input.fastq_r1} {params.scratch}/ 2>> {log}
-        cp {input.fastq_r2} {params.scratch}/ 2>> {log}
-        cp -R {input.index} {params.scratch}/ 2>> {log}
-        
-        # Get basenames for local files
-        R1_BASE=$(basename {input.fastq_r1})
-        R2_BASE=$(basename {input.fastq_r2})
-        INDEX_BASE=$(basename {input.index})
-        
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting alignment..." >> {log} 2>&1
-        STAR \
-            --runMode alignReads \
-            --genomeDir {params.scratch}/$INDEX_BASE \
-            --readFilesIn {params.scratch}/$R1_BASE {params.scratch}/$R2_BASE \
-            --readFilesCommand zcat \
-            --runThreadN {threads} \
-            --outFilterMismatchNmax 999 \
-            --limitBAMsortRAM 16000000000 \
-            --alignEndsType EndToEnd \
-            --outFilterMismatchNoverReadLmax {params.max_perread_sub_fraction} \
-            --outSAMtype BAM SortedByCoordinate \
-            --outSAMattributes MD NH AS \
-            --outFileNamePrefix {params.scratch}/ \
-            2> {log}
-        
-        # Copy results back to /project/
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying output back..." >> {log} 2>&1
-        cp {params.scratch}/Aligned.sortedByCoord.out.bam {output.aligned_bam} 2>> {log}
-        cp {params.scratch}/Log.final.out {output.stats} 2>> {log}
-        cat {params.scratch}/Log.out >> {log}
-        
-        # Cleanup
-        rm -rf {params.scratch}
-        
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Alignment complete." >> {log} 2>&1
+            mkdir -p {params.scratch}
+
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying inputs to local scratch..." >> {log} 2>&1
+            cp {input.fastq_r1} {params.scratch}/ >> {log} 2>&1
+            cp {input.fastq_r2} {params.scratch}/ >> {log} 2>&1
+            cp -R {input.index} {params.scratch}/ >> {log} 2>&1
+
+            R1_BASE=$(basename {input.fastq_r1})
+            R2_BASE=$(basename {input.fastq_r2})
+            INDEX_BASE=$(basename {input.index})
+
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting alignment..." >> {log} 2>&1
+            STAR \
+                --runMode alignReads \
+                --genomeDir {params.scratch}/$INDEX_BASE \
+                --readFilesIn {params.scratch}/$R1_BASE {params.scratch}/$R2_BASE \
+                --readFilesCommand zcat \
+                --runThreadN {threads} \
+                --outFilterMismatchNmax 999 \
+                --limitBAMsortRAM 16000000000 \
+                --alignEndsType EndToEnd \
+                --outFilterMismatchNoverReadLmax {params.max_perread_sub_fraction} \
+                --outSAMtype BAM SortedByCoordinate \
+                --outSAMattributes MD NH AS \
+                --outFileNamePrefix {params.scratch}/ \
+                >> {log} 2>&1
+
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying output back..." >> {log} 2>&1
+            cp {params.scratch}/Aligned.sortedByCoord.out.bam {output.aligned_bam} >> {log} 2>&1
+            cp {params.scratch}/Log.final.out {output.stats} >> {log} 2>&1
+            cat {params.scratch}/Log.out >> {log}
+
+            rm -rf {params.scratch}
+
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Alignment complete." >> {log} 2>&1
         """
 
 rule gedi_index_genome:
@@ -210,8 +205,10 @@ rule rename_with_donor_timepoint:
         bam=lambda w: f"data/aligned_bam/{get_sample_from_donor_timepoint(w.donor, w.timepoint)}.bam",
         bai=lambda w: f"data/aligned_bam/{get_sample_from_donor_timepoint(w.donor, w.timepoint)}.bam.bai"
     output:
-        bam="data/donor_timepoint_symlinks/{donor}/{timepoint}m.bam",
-        bai="data/donor_timepoint_symlinks/{donor}/{timepoint}m.bam.bai"
+        bam=f"data/donor_timepoint_symlinks/{{donor}}/{{timepoint}}{config['timepoint_unit']}.bam",
+        bai=f"data/donor_timepoint_symlinks/{{donor}}/{{timepoint}}{config['timepoint_unit']}.bam.bai",
+    # params:
+    #     time_unit = config['timepoint_unit']
     shell:
         """
         mkdir -p $(dirname {output.bam})
@@ -253,14 +250,16 @@ rule bam_to_cit:
     """
     input:
         bams = lambda w: expand(
-            "data/donor_timepoint_symlinks/{donor}/{timepoint}m.bam",
+            "data/donor_timepoint_symlinks/{donor}/{timepoint}{timepoint_unit}.bam",
             donor = w.donor,
-            timepoint = get_donor_timepoints(w.donor)
+            timepoint = get_donor_timepoints(w.donor),
+            timepoint_unit = config['timepoint_unit']
         ),
         bais = lambda w: expand(
-            "data/donor_timepoint_symlinks/{donor}/{timepoint}m.bam.bai",
+            "data/donor_timepoint_symlinks/{donor}/{timepoint}{timepoint_unit}.bam.bai",
             donor = w.donor,
-            timepoint = get_donor_timepoints(w.donor)
+            timepoint = get_donor_timepoints(w.donor),
+            timepoint_unit = config['timepoint_unit']
         ),
         no4sU_bam="data/donor_timepoint_symlinks/{donor}/control_no4sU.bam",
         no4sU_bai="data/donor_timepoint_symlinks/{donor}/control_no4sU.bam.bai",
@@ -281,34 +280,36 @@ rule bam_to_cit:
         runtime = 1440 # 20 hours in minutes
     benchmark:
         "benchmarks/{donor}.bam_to_cit.benchmark.txt"
+    log:
+        "logs/bam_to_cit/{donor}.log"
     shell:
         """
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying to scratch..."
-        mkdir -p {params.scratch}
-        cp {input.bams} {input.bais} {input.no4sU_bam} {input.no4sU_bai} {params.scratch}/
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copy complete."
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying to scratch..." >> {log} 2>&1
+        mkdir -p {params.scratch} >> {log} 2>&1
+        cp {input.bams} {input.bais} {input.no4sU_bam} {input.no4sU_bai} {params.scratch}/ >> {log} 2>&1
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copy complete." >> {log} 2>&1
 
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Generating output paths..."
-        cit_output_path=$(realpath {output.cit_sample_set})
-        metadata_output_path=$(realpath {output.cit_metadata})
-        mkdir -p $(dirname $cit_output_path)
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Paths created."
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Generating output paths..." >> {log} 2>&1
+        cit_output_path=$(realpath {output.cit_sample_set}) >> {log} 2>&1
+        metadata_output_path=$(realpath {output.cit_metadata}) >> {log} 2>&1
+        mkdir -p $(dirname $cit_output_path) >> {log} 2>&1
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Paths created." >> {log} 2>&1
 
-        cd {params.scratch}
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Setting Java max memory..."
+        cd {params.scratch} >> {log} 2>&1
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Setting Java max memory..." >> {log} 2>&1
         export _JAVA_OPTIONS="-Xmx{params.java_xmx}g -Xms{params.java_xms}g"
 
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Beginning CIT conversion..."
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Beginning CIT conversion..." >> {log} 2>&1
         gedi -e Bam2CIT -p output.cit \
             {params.bam_basenames} \
-            $(basename {input.no4sU_bam})
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Conversion complete."
+            $(basename {input.no4sU_bam}) >> {log} 2>&1
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Conversion complete." >> {log} 2>&1
 
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying output back..."
-        cp output.cit $cit_output_path
-        cp output.cit.metadata.json $metadata_output_path
-        rm -rf {params.scratch}
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copy complete, scratch cleared."
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying output back..." >> {log} 2>&1
+        cp output.cit $cit_output_path >> {log} 2>&1
+        cp output.cit.metadata.json $metadata_output_path >> {log} 2>&1
+        rm -rf {params.scratch} >> {log} 2>&1
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copy complete, scratch cleared." >> {log} 2>&1
         """
 
 rule grand_slam:
@@ -385,11 +386,11 @@ rule multiqc:
             sample_id = sample_ids,
         )
     output: 
-        'outputs/multiqc_report.html'
+        'outputs/{donor}_multiqc/multiqc_report.html'
     shell: 
         (
             'multiqc '
             'data/fastp_reports logs/star '
             '--force ' # overwrite existing report; otherwise it will attach a suffix that snakemake won't detect
-            '--outdir outputs'
+            '--outdir outputs/{donor}_multiqc/'
         )
