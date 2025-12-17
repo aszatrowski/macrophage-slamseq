@@ -7,6 +7,9 @@ echo "Loaded python/miniforge-25.3.0"
 module load apptainer
 echo "Loaded apptainer/singularity."
 
+module load R/4.4.1
+echo "Loaded R/4.4.1."
+
 ENV_NAME="${1:-slamseq_v3}"
 
 if [ -d "/project/lbarreiro/USERS/austin/envs/$ENV_NAME" ]; then
