@@ -1,7 +1,7 @@
 .DS_Store
 .snakemake/
 .gedi/
+renv/
 data/
 tmp/
-config/
 outputs/multiqc_data/
