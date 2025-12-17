@@ -1,28 +1,33 @@
 # SLAM-seq rotation project
 *January 2026*
-*Austin Szatrowski, based on a SLAMseq analysis pipeline by Jesse Lehman, Pai Lab @ UMass Med*
+
+*Austin Szatrowski [[email](mailto:aszatrowski@uchicago.edu)], based on a SLAMseq analysis pipeline by Jesse Lehman, Pai Lab @ UMass Med*
 
 ### Rulegraph:
 ![pipeline rulegraph](outputs/rulegraph.png)
 
 ## SETUP (START HERE)
-To run this pipeline, you will need to (1) set up a conda environment, (2) build a apptainer/docker container for GRAND-SLAM, and (3) execute the pipeline.
+To run this pipeline, you will need to (1) set up a conda environment, (2) build a apptainer/docker container for GEDI (a SLAM-seq quantification software package), and (3) execute the pipeline.
 
 1. Build the apptainer container: 
 ```bash
-apptainer build /project/lbarreiro/USERS/austin/containers/gedi_1.0.6a.sif slamseq/gedi.def
+apptainer build /project/your-pi/you/containers/gedi_R.sif slamseq/gedi.def
 ```
 
 2. Build the conda environment, and activate it:
 ```bash
-conda create profile/environment.yaml > slamseq_v3 
+conda create profile/environment.yaml > /path/to/envs/slamseq_v3 
 source setup.sh
 ```
+* `source activate` may be different on your cluster.
 
 3. Execute the pipeline, using settings in `profile/config.yaml`
 ```bash
-snakemake --workflow-profile ./profile
+snakemake --workflow-profile ./profile [-np]
 ```
+* `-np` indicates a snakemake dry run, which prints out all the instances of all the rules to be executed and their corresponding shell commands. Gives an excellent overview of the work to be done, and is useful for debugging.
+* `profile/config.yaml` is configured for slurm and UChicago's midway3 architecture; some revisions may be necessary.
+
 ## Containers
 
 **Make sure you do this before running the pipeline.**
@@ -43,15 +48,12 @@ snakemake --workflow-profile ./profile
 
 ## Folders
 * `.snakemake`: under-the-hood metadata for DAG creation, plus execution (`log/`) and rule (`slurm_logs/`) log files
-* `.gedi` An annoying folder that GEDI (the software from GRAND-SLAM comes) creates. I'm afraid to touch it.
-* `config/genomic` will contain the index files for GEDI. So far as I can tell, they have to be in a folder with this name, otherwise GEDI commands won't recognize them.
 * `data`: symlinks to raw `.fastq` data in Hannah's personal folder, plus all intermediate outputs (before clearance by snakemake, see `temp()`) and space for temp files. Anything that is too large to be part of a GitHub repo, not human-readable, or isn't an interesting result goes in here
 * `outputs`: results, metadata, and QC summary folders. Of note, a _summary_ of the fastp checks go here, but individual reports go in `data`.
 
 
 ## Global inputs
 * `*.fastq.gz` compressed sequencing files
-* `ref_genome_assembly` a `.fa` reference genome file against which to align. I have used the Barreiro shared hg38 one.
 ## Input file specification
 * As it stands, each input `sample_id` (`/project/pi/path/to/data/{sample_id}.fastq.gz`) should be associated with a donor and a timepoint in `config.yaml` (not to be confused with `profile/config.yaml`, which is used for execution settings.)
     * `sample_id`
@@ -73,24 +75,12 @@ default-resources:
   slurm_partition: lbarreiro
 ```
 
-### Rules
-#### `cat_fastqs`
-* Concatenates `.fastq.gz` files from the same sample (different lanes) together before preprocessing and alignment.
-* Runs directly on login node
-
-#### `process_fastp`
-* Pulls in each sequencing file (R1 and R2 separately), and runs `fastp`, which runs a FastQC-style sequence QC, and adapter trimming
-* Output: trimmed fastq sequence files, `html` report and `json` machine-readable metadata
-    * saved in `data/trimmed/`
-
-#### `star`
-* explain copy to scratch
-#### `multiqc`
-* Reads `data/fastp_reports/` `logs/star/qc` for per-sample QC files, and generates a beautifully formatted HTML summary with interative plots
-#### `index_bam`
-#### `rename_with_donor_timepoint`
-#### `mark_no4sU_samples`
-#### `gedi_index_genome`
-#### `bam_to_cit`
-#### `grand_slam`
-#### `plot_read_timeseries`
+## Approximate timing
+* `cat_fastqs`: seconds
+* `fastp`
+    * 4 cores: ~45-60 min per sample
+* `star`
+    * 8 threads: ~1hr/10G of trimmed reads
+* `bam_to_cit`: 18h for ~150G of aligned BAMs
+* `grand_slam`: 
+    * 16 threads: 5h for 76G CIT file
