@@ -284,32 +284,34 @@ rule bam_to_cit:
         "logs/bam_to_cit/{donor}.log"
     shell:
         """
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying to scratch..." >> {log} 2>&1
-        mkdir -p {params.scratch} >> {log} 2>&1
-        cp {input.bams} {input.bais} {input.no4sU_bam} {input.no4sU_bai} {params.scratch}/ >> {log} 2>&1
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copy complete." >> {log} 2>&1
+        log_path=$(realpath {log})
+        echo "Logging to $log_path."
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying to scratch..." > $log_path 2>&1
+        mkdir -p {params.scratch} >> $log_path 2>&1
+        cp {input.bams} {input.bais} {input.no4sU_bam} {input.no4sU_bai} {params.scratch}/ >> $log_path 2>&1
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copy complete." >> $log_path 2>&1
 
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Generating output paths..." >> {log} 2>&1
-        cit_output_path=$(realpath {output.cit_sample_set}) >> {log} 2>&1
-        metadata_output_path=$(realpath {output.cit_metadata}) >> {log} 2>&1
-        mkdir -p $(dirname $cit_output_path) >> {log} 2>&1
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Paths created." >> {log} 2>&1
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Generating output paths..." >> $log_path 2>&1
+        cit_output_path=$(realpath {output.cit_sample_set}) >> $log_path 2>&1
+        metadata_output_path=$(realpath {output.cit_metadata}) >> $log_path 2>&1
+        mkdir -p $(dirname $cit_output_path) >> $log_path 2>&1
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Paths created." >> $log_path 2>&1
 
-        cd {params.scratch} >> {log} 2>&1
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Setting Java max memory..." >> {log} 2>&1
+        cd {params.scratch} >> $log_path 2>&1
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Setting Java max memory..." >> $log_path 2>&1
         export _JAVA_OPTIONS="-Xmx{params.java_xmx}g -Xms{params.java_xms}g"
 
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Beginning CIT conversion..." >> {log} 2>&1
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Beginning CIT conversion..." >> $log_path 2>&1
         gedi -e Bam2CIT -p output.cit \
             {params.bam_basenames} \
-            $(basename {input.no4sU_bam}) >> {log} 2>&1
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Conversion complete." >> {log} 2>&1
+            $(basename {input.no4sU_bam}) >> $log_path 2>&1
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Conversion complete." >> $log_path 2>&1
 
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying output back..." >> {log} 2>&1
-        cp output.cit $cit_output_path >> {log} 2>&1
-        cp output.cit.metadata.json $metadata_output_path >> {log} 2>&1
-        rm -rf {params.scratch} >> {log} 2>&1
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copy complete, scratch cleared." >> {log} 2>&1
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying output back..." >> $log_path 2>&1
+        cp output.cit $cit_output_path >> $log_path 2>&1
+        cp output.cit.metadata.json $metadata_output_path >> $log_path 2>&1
+        rm -rf {params.scratch} >> $log_path 2>&1
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copy complete, scratch cleared." >> $log_path 2>&1
         """
 
 rule grand_slam:
@@ -349,14 +351,15 @@ rule grand_slam:
         config['container_path']
     resources:
        runtime = 480, # 8 hours in minutes
-       mem_mb = 20000,
+       mem_mb = 30000,
     threads:
         16,
     benchmark:
         "benchmarks/{donor}.grandslam.benchmark.txt"
     shell: 
         """
-            export _JAVA_OPTIONS="-Xmx{params.java_xmx}g -Xms{params.java_xms}g" &> {log}
+            echo "Setting Java memory..." > {log}
+            export _JAVA_OPTIONS="-Xmx{params.java_xmx}g -Xms{params.java_xms}g" >> {log} 2>&1
             gedi -e Slam \
             -genomic {input.index_oml} \
             -reads {input.cit_sample_set} \
@@ -368,7 +371,7 @@ rule grand_slam:
             -nthreads {threads} \
             -plot \
             -full \
-            -progress >>{log} 2>&1
+            -progress >> {log} 2>&1
         """
 
 rule multiqc:
