@@ -243,8 +243,8 @@ def get_donor_timepoints(donor):
 
 rule bam_to_cit:
     """
-    GRAND-SLAM runs much faster on its custom Centered Interval Trees (CIT) format (https://github.com/erhard-lab/gedi/wiki/Mapped-reads). When all the samples in a timecourse are rolled together into a single CIT file, SNPs can be called jointly (they will be shared across samples), and the whole process runs more efficiently. 
-    This rule retrieves all the timepoints for a given donor using the function above, and generates a CIT file. Takes about 18 hours for 6 timepoints whose bams are ~20GB each.
+    GRAND-SLAM runs much faster on its custom Centered Interval Trees (CIT) format (https://github.com/erhard-lab/gedi/wiki/Mapped-reads). When all the samples in a timecourse are rolled together into a single CIT file, SNPs can be called jointly (they will be shared across samples, whereas 4sU-introduced T>C reference mismatches will not), and the whole process runs more efficiently. 
+    This rule retrieves all the timepoints for a given donor using the helper function above, and generates a CIT file. Takes about 18 hours for 6 timepoints whose bams are ~20GB each.
     Makes use of the same copy to scratch trick as read alignment with STAR.
     Outputs one very large CIT file (though smaller than the sum of the BAM file sizes), and a metadata file that GRAND-SLAM will read to determine what the original files were called.
     """
@@ -316,7 +316,7 @@ rule bam_to_cit:
 
 rule grand_slam:
     """
-    Calls and quantifies nascent transcripts in each CIT file, using the GRAND-SLAM binomial mixture model (essentially, is it more likely that the T>C mismatches on this read arose from 4sU labeling or by chance, after SNP correction?) Details in the GRAND-SLAM paper here: https://doi.org/10.1093/bioinformatics/bty256
+    Calls and quantifies nascent transcripts in each CIT file, using the GRAND-SLAM binomial mixture model (essentially, is it more likely that the T>C mismatches on this read arose from 4sU labeling or by sequencing error, after SNP correction?) Details in the GRAND-SLAM paper here: https://doi.org/10.1093/bioinformatics/bty256
     Produces total read counts and nascent read fractions (grandslam.tsv.gz), in addition a dizzying array of QC data and plots, which I am only just beginning to understand. "Explanations" here: https://github.com/erhard-lab/gedi/wiki/GRAND-SLAM
     """
     input: 
@@ -371,7 +371,7 @@ rule grand_slam:
             -nthreads {threads} \
             -plot \
             -full \
-            -progress >> {log} 2>&1
+            >> {log} 2>&1
         """
 
 rule multiqc:
