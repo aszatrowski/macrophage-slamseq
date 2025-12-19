@@ -19,7 +19,7 @@ From: eclipse-temurin:17-jdk-jammy
     INSTALL_DIR="/opt/gedi"
 
     # Install required R packages
-    Rscript --vanilla -e 'install.packages(c("ggplot2", "plyr", "data.table", "reshape2"), repos="https://cloud.r-project.org")'
+    Rscript --vanilla -e 'install.packages(c("bit64", "ggplot2", "plyr", "data.table", "reshape2"), repos="https://cloud.r-project.org")'
 
     mkdir -p $INSTALL_DIR
     cd $INSTALL_DIR
