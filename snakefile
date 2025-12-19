@@ -340,8 +340,8 @@ rule grand_slam:
         ntr_stats = "data/slam_quant/{donor}/grandslam.ntrstat.tsv",
     params:
         # GEDI is a Java program, and by default Java only allocates 16GB of RAM for any running programs. For large samples, this will not be enough (job crashed several times), so we set an environment variable for this allocation (java_xmx) to 87.5% of the total RAM allocation for the job. The remaining 12.5% (or 4GB, whichever is larger) is reserved for the system.
-        java_xmx=lambda w, resources: int(resources.mem_mb * 0.875 / 1024),  # 87.5% in GB
-        java_xms=lambda w, resources: max(4, int(resources.mem_mb * 0.125 / 1024)),  # 12.5% in GB, min 4
+        java_xmx=lambda w, resources: int(resources.mem_mb * 0.9 / 1024),  # 90% in GB
+        java_xms=lambda w, resources: max(4, int(resources.mem_mb * 0.1 / 1024)),  # 10% in GB, min 4
         trim5p = 10,
         trim3p = 10,
     log:
