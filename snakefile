@@ -360,10 +360,6 @@ rule grand_slam:
         """
             echo "Setting Java memory..." > {log}
             export _JAVA_OPTIONS="-Xmx{params.java_xmx}g -Xms{params.java_xms}g" >> {log} 2>&1
-            echo "Setting process limit size..." >> {log} 2>&1
-            ulimit -s 32768
-            echo "Set ulimit to $(ulimit -s)." >> {log} 2>&1
-            R --slave -e 'Cstack_info()["size"]' >> {log} 2>&1
             gedi -e Slam \
             -genomic {input.index_oml} \
             -reads {input.cit_sample_set} \
