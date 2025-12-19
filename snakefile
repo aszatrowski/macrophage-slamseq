@@ -351,9 +351,9 @@ rule grand_slam:
         config['container_path']
     resources:
        runtime = 480, # 8 hours in minutes
-       mem_mb = 30000,
+       mem_mb = 42000,
     threads:
-        24, # bump up to 24
+        30, # bump up to 24
     benchmark:
         "benchmarks/{donor}.grandslam.benchmark.txt"
     shell: 
@@ -368,7 +368,6 @@ rule grand_slam:
             -genomic {input.index_oml} \
             -reads {input.cit_sample_set} \
             -prefix data/slam_quant/{wildcards.donor}/grandslam \
-            -introns \
             -trim5p {params.trim5p} \
             -trim3p {params.trim3p} \
             -no4sUpattern control_no4sU \
@@ -400,3 +399,13 @@ rule multiqc:
             '--force ' # overwrite existing report; otherwise it will attach a suffix that snakemake won't detect
             '--outdir outputs/{donor}_multiqc/'
         )
+
+rule deg_analysis:
+    """
+    Run differential gene expression (DGE) analysis on the nascent subset of transcripts, as called by GRAND-SLAM, using edgeR.
+    """
+    input: 
+        nascent_counts = "data/slam_quant/{donor}/grandslam.tsv.gz",
+    output: 
+        dge_results = "data/nascent_dge/{donor}.csv"
+    script: "scripts/nascent_dge.R"
