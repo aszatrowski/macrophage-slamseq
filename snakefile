@@ -317,6 +317,7 @@ rule bam_to_cit:
 rule grand_slam:
     """
     Calls and quantifies nascent transcripts in each CIT file, using the GRAND-SLAM binomial mixture model (essentially, is it more likely that the T>C mismatches on this read arose from 4sU labeling or by sequencing error, after SNP correction?) Details in the GRAND-SLAM paper here: https://doi.org/10.1093/bioinformatics/bty256
+    More details about individual steps are in README.md.
     Produces total read counts and nascent read fractions (grandslam.tsv.gz), in addition a dizzying array of QC data and plots, which I am only just beginning to understand. "Explanations" here: https://github.com/erhard-lab/gedi/wiki/GRAND-SLAM
     """
     input: 
@@ -328,16 +329,40 @@ rule grand_slam:
         nascent_counts = "data/slam_quant/{donor}/grandslam.tsv.gz",
         # Substitution rates per sample
         sub_rates = "data/slam_quant/{donor}/grandslam.rates.tsv",
-        # TSV of every observed mismatch
-        mismatch_tsv = "data/slam_quant/{donor}/grandslam.mismatches.tsv",
+        # Summary of mismatch types in each sample
+        mismatch_summary_tsv = "data/slam_quant/{donor}/grandslam.mismatches.tsv",
+        # TSV of every mismatch observed across samples
+        every_mismatch_tsv = "data/slam_quant/{donor}/grandslam.mismatchdetails.tsv",
         # Plot of mismatch rates in each sample
         mismatch_plot = "data/slam_quant/{donor}/grandslam.mismatches.pdf",
         # Mismatch rates across all samples, with positions in the read. Often, there are artifactual mismatch spikes at the ends of reads that can be excluded with -trim5p and -trim3p
         mismatch_positions = "data/slam_quant/{donor}/grandslam.mismatchpos.pdf",
         # Same plot, but with narrower y-axis so spikes don't flatten everything else out
         mismatch_positions_zoomed = "data/slam_quant/{donor}/grandslam.mismatchposzoomed.pdf",
+        # Same as mismatch_plot, but only for mismatches with read1 + read2 coverage 
+        mismatches_double_plot = "data/slam_quant/{donor}/grandslam.double.pdf",
+        # Same as mismatch_summary_tsv, but only for mismatches with read1 + read2 coverage 
+        mismatches_double_tsv = "data/slam_quant/{donor}/grandslam.doublehit.tsv",
         # Number of T>C mismatches, and nascent/old RNA fractions in each sample
         ntr_stats = "data/slam_quant/{donor}/grandslam.ntrstat.tsv",
+        # I don't know what these are. I'm so sorry.
+        binom = "data/slam_quant/{donor}/grandslam.binom.tsv",
+        binom_est = "data/slam_quant/{donor}/grandslam.binomEstimated.tsv",
+
+        binom_overlap = "data/slam_quant/{donor}/grandslam.binomOverlap.tsv",
+        binom_est_overlap = "data/slam_quant/{donor}/grandslam.binomOverlapEstimated.tsv",
+
+        # ratios of exonic to intronic reads plot
+        exon_intron_ratios = "data/slam_quant/{donor}/grandslam.exonintron.pdf",
+
+        # per-sample Bayesian estimates of the NTR (as MAP), plus 0.95CIs and beta approximations to the posterior distribution
+        beta_dist_approximations = "data/slam_quant/{donor}/grandslam.ext.tsv",
+        # run parameters
+        run_params = "data/slam_quant/{donor}/grandslam.param",
+        # execution times for each step of GRAND-SLAM
+        runtime = "data/slam_quant/{donor}/grandslam.runtime",
+        # inferred strandness of sequencing experiment
+        strandness = "data/slam_quant/{donor}/grandslam.strandness"
     params:
         # GEDI is a Java program, and by default Java only allocates 16GB of RAM for any running programs. For large samples, this will not be enough (job crashed several times), so we set an environment variable for this allocation (java_xmx) to 87.5% of the total RAM allocation for the job. The remaining 12.5% (or 4GB, whichever is larger) is reserved for the system.
         java_xmx=lambda w, resources: int(resources.mem_mb * 0.9 / 1024),  # 90% in GB
