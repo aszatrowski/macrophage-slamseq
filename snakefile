@@ -353,13 +353,17 @@ rule grand_slam:
        runtime = 480, # 8 hours in minutes
        mem_mb = 30000,
     threads:
-        16,
+        24, # bump up to 24
     benchmark:
         "benchmarks/{donor}.grandslam.benchmark.txt"
     shell: 
         """
             echo "Setting Java memory..." > {log}
             export _JAVA_OPTIONS="-Xmx{params.java_xmx}g -Xms{params.java_xms}g" >> {log} 2>&1
+            echo "Setting process limit size..." >> {log} 2>&1
+            ulimit -s 32768
+            echo "Set ulimit to $(ulimit -s)." >> {log} 2>&1
+            R --slave -e 'Cstack_info()["size"]' >> {log} 2>&1
             gedi -e Slam \
             -genomic {input.index_oml} \
             -reads {input.cit_sample_set} \
@@ -369,8 +373,7 @@ rule grand_slam:
             -trim3p {params.trim3p} \
             -no4sUpattern control_no4sU \
             -nthreads {threads} \
-            -plot \
-            -full \
+            -progress \
             >> {log} 2>&1
         """
 
