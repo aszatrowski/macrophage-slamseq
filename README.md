@@ -13,6 +13,7 @@ To run this pipeline, you will need to (1) set up a conda environment, (2) build
 ```bash
 apptainer build /project/your-pi/you/containers/gedi_R.sif slamseq/gedi.def
 ```
+In `config.yaml`, set `container_path` to `/project/your-pi/you/containers/gedi_R.sif` so snakemake will know where to find it.
 
 2. Build the conda environment, and activate it:
 ```bash
