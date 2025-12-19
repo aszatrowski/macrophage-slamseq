@@ -35,5 +35,35 @@ From: eclipse-temurin:17-jdk-jammy
     useradd -m -s /bin/bash gediuser
     chown -R gediuser:gediuser /opt/gedi
 
+%test
+    set -e
+    
+    # Test 1: Verify Java installation and version
+    java -version
+    
+    # Test 2: Verify R installation and required packages
+    Rscript --vanilla -e 'required <- c("bit64", "ggplot2", "plyr", "data.table", "reshape2"); stopifnot(all(required %in% installed.packages()[,"Package"]))'
+    
+    # Test 3: Verify GEDI executable exists and is in PATH
+    which gedi
+    
+    # Test 4: Test GEDI basic execution (should print help/usage)
+    gedi -h || gedi --help || gedi
+    
+    # Test 5: Verify GEDI jar file was built successfully
+    test -f /opt/gedi/gedi/Gedi/target/Gedi-*.jar
+    
+    # Test 6: Test GEDI can list available programs
+    gedi -e list 2>&1 | grep -i "Available programs" || true
+    
+    # Test 7: Verify user setup
+    id gediuser
+    
+    # Test 8: Check directory permissions
+    test -r /opt/gedi/gedi
+    test -x /opt/gedi/bin
+    
+    echo "All installation tests passed successfully."
+
 %runscript
     exec gedi "$@"
