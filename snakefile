@@ -149,7 +149,6 @@ rule star:
             echo "[$(date '+%Y-%m-%d %H:%M:%S')] Alignment complete." >> {log} 2>&1
         """
 
-
 rule index_bam:
     """
     Builds a .bai index for each BAM file. The Bam2CIT and GRAND-SLAM docs never mention requiring an index, but will fail if there is no file called $filename.bam.bai in the same folder as the provided input.
@@ -185,7 +184,7 @@ def get_sample_from_donor_timepoint(donor, timepoint):
     print(
         f"No sample found for donor='{donor}' at timepoint='{timepoint}'. "
     )
-    return None  # Explicit return instead of implicit
+    return None
 
 rule rename_with_donor_timepoint:
     """
@@ -233,6 +232,15 @@ rule gedi_index_genome:
             gedi -e IndexGenome -organism homo_sapiens -version 115 -f {config['gedi_index_dir']} -o {config['gedi_index_dir']}/homo_sapiens.115.oml -nomapping
         """
 
+def parse_bam_to_cit_progress(progress_bool):
+    """
+    Map config['bam_to_cit_progress'] bool to '-p' argument or '' (empty)
+    """
+    if progress_bool == True:
+        return "-p"
+    elif progress_bool == False:
+        return ''
+    raise ValueError('Invalid bam_to_cit progress setting. Should be set to True or False.')
 rule bam_to_cit:
     """
     GRAND-SLAM runs much faster on its custom Centered Interval Trees (CIT) format (https://github.com/erhard-lab/gedi/wiki/Mapped-reads). When all the samples in a timecourse are rolled together into a single CIT file, SNPs can be called jointly (they will be shared across samples, whereas 4sU-introduced T>C reference mismatches will not), and the whole process runs more efficiently. 
@@ -255,11 +263,12 @@ rule bam_to_cit:
         cit_sample_set = "data/cit_sample_sets/{donor}.cit",
         cit_metadata = "data/cit_sample_sets/{donor}.cit.metadata.json",
     params:
+        progress = parse_bam_to_cit_progress(config['bam_to_cit_progress']),
         scratch = lambda wildcards: f"/scratch/midway3/$USER/{wildcards.donor}_$SLURM_JOB_ID",
         bam_basenames = lambda w, input: " ".join([os.path.basename(b) for b in input.bams]),
         # GEDI is a Java program, and by default Java only allocates 16GB of RAM for any running programs. For large samples, this will not be enough (job crashed several times), so we set an environment variable for this allocation (java_xmx) to 87.5% of the total RAM allocation for the job. The remaining 12.5% (or 4GB, whichever is larger) is reserved for the system.
         java_xmx=lambda w, resources: int(resources.mem_mb * 0.875 / 1024),  # 87.5% in GB
-        java_xms=lambda w, resources: max(4, int(resources.mem_mb * 0.125 / 1024))  # 12.5% in GB, min 4
+        java_xms=lambda w, resources: max(4, int(resources.mem_mb * 0.125 / 1024)), # 12.5% in GB, min 4
     container:
         # Path to the apptainer container for GEDI
         config["container_path"]
@@ -290,7 +299,7 @@ rule bam_to_cit:
         export _JAVA_OPTIONS="-Xmx{params.java_xmx}g -Xms{params.java_xms}g"
 
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Beginning CIT conversion..." >> $log_path 2>&1
-        gedi -e Bam2CIT -p output.cit \
+        gedi -e Bam2CIT {params.progress} output.cit \
             {params.bam_basenames} \
              >> $log_path 2>&1
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Conversion complete." >> $log_path 2>&1

@@ -101,5 +101,5 @@ donor_controls:
 control_timepoint: 'no4sU'
 
 gedi_index_dir: 'data/gedi_index'
-# Write several-per-second progress updates to log files? Nice for keeping track, but log files blow up to ~50MB when enabled.
-bam2cit_progress: False
+# Should bam_to_cit write several progress updates per second to its log file? Nice for keeping track, but log file will be ~60MB by completion.
+bam_to_cit_progress: False
