@@ -19,7 +19,7 @@ rule all:
             donor = DONORS,
             readtype = ['nascent', 'total']
         ),
-        # 'outputs/multiqc_report.html'
+        'outputs/multiqc_report.html'
 
 rule cat_fastqs:
     """
@@ -421,13 +421,13 @@ rule multiqc:
             sample_id = sample_ids,
         )
     output: 
-        'outputs/{donor}_multiqc/multiqc_report.html'
+        'outputs/multiqc_report.html'
     shell: 
         (
             'multiqc '
-            'data/fastp_reports logs/star '
+            'data/fastp_reports logs/star/qc '
             '--force ' # overwrite existing report; otherwise it will attach a suffix that snakemake won't detect
-            '--outdir outputs/{donor}_multiqc/'
+            '--outdir outputs'
         )
 
 rule calc_nascent_total_reads:
