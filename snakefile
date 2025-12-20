@@ -310,7 +310,7 @@ rule bam_to_cit:
         export _JAVA_OPTIONS="-Xmx{params.java_xmx}g -Xms{params.java_xms}g"
 
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Beginning CIT conversion..." >> $log_path 2>&1
-        gedi -e Bam2CIT output.cit \
+        gedi -e Bam2CIT -p output.cit \
             {params.bam_basenames} \
             $(basename {input.no4sU_bam}) >> $log_path 2>&1
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Conversion complete." >> $log_path 2>&1
