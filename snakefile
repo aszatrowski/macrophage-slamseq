@@ -149,34 +149,6 @@ rule star:
             echo "[$(date '+%Y-%m-%d %H:%M:%S')] Alignment complete." >> {log} 2>&1
         """
 
-rule gedi_index_genome:
-    """
-    Build an index for GEDI's GRAND-SLAM to use. Produces a ton of difficult to interpret files, but the most important is the OML that tells GRAND-SLAM where everything else is. It being in a directory called ./config/genomic seems to be hard-coded into GEDI tools, so there it must go, unless there's some way around that.
-    
-    By default, it fetches the FASTA and GTF files from ensembl and builds the reference based on those, but if incompatiblity issues arise, you can manually provide your own versions of each, see docs at: https://github.com/erhard-lab/gedi/wiki/Preparing-genomes
-    """
-    output:
-        fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.fasta",
-        fi = f"{config['gedi_index_dir']}/homo_sapiens.115.fi",
-        genes_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.genes.tab",
-        gtf = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf",
-        index_cit = f"{config['gedi_index_dir']}/homo_sapiens.115.index.cit",
-        transcripts_fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.fasta",
-        transcripts_fi = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.fi",
-        transcripts_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.tab",
-        oml = f"{config['gedi_index_dir']}/homo_sapiens.115.oml"
-    container:
-        config['container_path']
-    resources:
-        mem_mb= "8G",
-        runtime = 5 
-    params:
-        output_dir = config['gedi_index_dir']
-    shell:
-        f"""
-            mkdir -p {config['gedi_index_dir']}
-            gedi -e IndexGenome -organism homo_sapiens -version 115 -f {config['gedi_index_dir']} -o {config['gedi_index_dir']}/homo_sapiens.115.oml -nomapping
-        """
 
 rule index_bam:
     """
@@ -246,6 +218,34 @@ rule mark_no4sU_samples:
         ln -sf $(realpath {input.bai}) {output.bai}
         """
 
+rule gedi_index_genome:
+    """
+    Build an index for GEDI's GRAND-SLAM to use. Produces a ton of difficult to interpret files, but the most important is the OML that tells GRAND-SLAM where everything else is. It being in a directory called ./config/genomic seems to be hard-coded into GEDI tools, so there it must go, unless there's some way around that.
+    
+    By default, it fetches the FASTA and GTF files from ensembl and builds the reference based on those, but if incompatiblity issues arise, you can manually provide your own versions of each, see docs at: https://github.com/erhard-lab/gedi/wiki/Preparing-genomes
+    """
+    output:
+        fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.fasta",
+        fi = f"{config['gedi_index_dir']}/homo_sapiens.115.fi",
+        genes_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.genes.tab",
+        gtf = f"{config['gedi_index_dir']}/homo_sapiens.115.gtf",
+        index_cit = f"{config['gedi_index_dir']}/homo_sapiens.115.index.cit",
+        transcripts_fasta = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.fasta",
+        transcripts_fi = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.fi",
+        transcripts_tab = f"{config['gedi_index_dir']}/homo_sapiens.115.transcripts.tab",
+        oml = f"{config['gedi_index_dir']}/homo_sapiens.115.oml"
+    container:
+        config['container_path']
+    resources:
+        mem_mb= "8G",
+        runtime = 5 
+    params:
+        output_dir = config['gedi_index_dir']
+    shell:
+        f"""
+            mkdir -p {config['gedi_index_dir']}
+            gedi -e IndexGenome -organism homo_sapiens -version 115 -f {config['gedi_index_dir']} -o {config['gedi_index_dir']}/homo_sapiens.115.oml -nomapping
+        """
 
 rule bam_to_cit:
     """
