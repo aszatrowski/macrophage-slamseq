@@ -2,7 +2,7 @@ import os
 ## CONFIG:
 configfile: "config.yaml"
 # these are so lightweight that they can be run directly on the login node; no need for slurm or compute nodes
-localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, mark_no4sU_samples, multiqc
+localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, mark_no4sU_samples, multiqc, calc_nascent_total_reads
 
 DONORS = ['donor1_rep2']
 sample_ids = list(config['sample_ids'].keys())
@@ -10,8 +10,14 @@ sample_ids = list(config['sample_ids'].keys())
 rule all:
     input: 
         expand(
-            "data/slam_quant/{donor}/grandslam.tsv.gz",
-            donor = DONORS
+            "data/tmm_normalized/{donor}_reads_{readtype}.csv",
+            donor = DONORS,
+            readtype = ['nascent', 'total']
+        ),
+        expand(
+            "data/processed_reads/{donor}_reads_{readtype}.csv",
+            donor = DONORS,
+            readtype = ['nascent', 'total']
         ),
         # 'outputs/multiqc_report.html'
 
@@ -325,8 +331,8 @@ rule grand_slam:
         cit_metadata = "data/cit_sample_sets/{donor}.cit.metadata.json",
         index_oml = rules.gedi_index_genome.output.oml
     output: 
-        # Total and nascent read counts
-        nascent_counts = "data/slam_quant/{donor}/grandslam.tsv.gz",
+        # Total read counts, new-to-total read ratios (NTRs), and NTR distributions for all samples
+        read_table = "data/slam_quant/{donor}/grandslam.tsv.gz",
         # Substitution rates per sample
         sub_rates = "data/slam_quant/{donor}/grandslam.rates.tsv",
         # Summary of mismatch types in each sample
@@ -422,12 +428,20 @@ rule multiqc:
             '--outdir outputs/{donor}_multiqc/'
         )
 
-rule deg_analysis:
+rule calc_nascent_total_reads:
     """
     Run differential gene expression (DGE) analysis on the nascent subset of transcripts, as called by GRAND-SLAM, using edgeR.
     """
     input: 
-        nascent_counts = "data/slam_quant/{donor}/grandslam.tsv.gz",
+        read_table = "data/slam_quant/{donor}/grandslam.tsv.gz",
     output: 
-        dge_results = "data/nascent_dge/{donor}.csv"
-    script: "scripts/nascent_dge.R"
+        total_counts = "data/processed_reads/{donor}_reads_total.csv",
+        nascent_counts = "data/processed_reads/{donor}_reads_nascent.csv"
+    script: "scripts/process_read_table.R"
+
+rule normalize_tmm:
+    input: 
+        "data/processed_reads/{donor}_reads_{readtype}.csv",
+    output: 
+        "data/tmm_normalized/{donor}_reads_{readtype}.csv",
+    script: "scripts/normalize_tmm.R"
