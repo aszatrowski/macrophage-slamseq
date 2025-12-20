@@ -26,70 +26,70 @@ timepoint_unit: "m" # unit suffix to attach to each timepoint, e.g. "60m" or "1h
 sample_ids:
   LB-HT-28s-HT-01_S1:
     donor: donor1_rep1
-    timepoint: 0
+    timepoint: 0m
   LB-HT-28s-HT-02_S2:
     donor: donor1_rep1
-    timepoint: 15
+    timepoint: 15m
   LB-HT-28s-HT-03_S3:
     donor: donor1_rep1
-    timepoint: 30
+    timepoint: 30m
   LB-HT-28s-HT-05_S5:
     donor: donor1_rep1
-    timepoint: 60
+    timepoint: 60m
   LB-HT-28s-HT-06_S6:
     donor: donor1_rep1
-    timepoint: 90
+    timepoint: 90m
   LB-HT-28s-HT-07_S7:
     donor: donor1_rep1
-    timepoint: 105
+    timepoint: 105m
   LB-HT-28s-HT-08_S8:
     donor: donor1_rep1
-    timepoint: 120
+    timepoint: 120m
   LB-HT-28s-HT-09_S9:
     donor: donor1_rep1
     timepoint: 'no4sU'
   LB-HT-28s-HT-10_S10:
     donor: donor2_rep1
-    timepoint: 0
+    timepoint: 0m
   LB-HT-28s-HT-12_S12:
     donor: donor2_rep1
-    timepoint: 30
+    timepoint: 30m
   LB-HT-28s-HT-16_S16:
     donor: donor2_rep1
-    timepoint: 105
+    timepoint: 105m
   LB-HT-28s-HT-17_S17:
     donor: donor2_rep1
-    timepoint: 120
+    timepoint: 120m
   LB-HT-28s-HT-18_S18:
     donor: donor2_rep1
     timepoint: 'no4sU'
   LB-HT-28s-JL-01_S19:
     donor: donor1_rep2
-    timepoint: 0
+    timepoint: 0m
   LB-HT-28s-JL-02_S20:
     donor: donor1_rep2
-    timepoint: 15
+    timepoint: 15m
   LB-HT-28s-JL-03_S21:
     donor: donor1_rep2
-    timepoint: 30
+    timepoint: 30m
   LB-HT-28s-JL-04_S22:
     donor: donor1_rep2
-    timepoint: 45
+    timepoint: 45m
   LB-HT-28s-JL-05_S23:
     donor: donor1_rep2
-    timepoint: 60
+    timepoint: 60m
   LB-HT-28s-JL-06_S24:
     donor: donor1_rep2
-    timepoint: 75
+    timepoint: 75m
   LB-HT-28s-JL-07_S25:
     donor: donor1_rep2
-    timepoint: 90
+    timepoint: 90m
   LB-HT-28s-JL-08_S26:
     donor: donor1_rep2
-    timepoint: 105
+    timepoint: 105m
   LB-HT-28s-JL-09_S27:
     donor: donor1_rep2
-    timepoint: 120
+    timepoint: 120m
 
 # Map donors to their control samples
 donor_controls:
@@ -100,5 +100,6 @@ donor_controls:
 # string to specify no4sU control. A "timepoint" in the sense that it gets added at the end of the filename where the timepoint would go, but doesn't represent a true point in time.
 control_timepoint: 'no4sU'
 
-# don't change this, it appears to be hard-coded in GEDI itself. Silly, I know.
 gedi_index_dir: 'data/gedi_index'
+# Write several-per-second progress updates to log files? Nice for keeping track, but log files blow up to ~50MB when enabled.
+bam2cit_progress: False
