@@ -20,9 +20,6 @@ donors:
   - donor2_rep1
   - donor1_rep2
 
-timepoint_unit: "m" # unit suffix to attach to each timepoint, e.g. "60m" or "1h"
-
-# In here, map each sample ID to a donor ID and a timepoint (make numeric, pipeline will attach units)
 sample_ids:
   LB-HT-28s-HT-01_S1:
     donor: donor1_rep1
