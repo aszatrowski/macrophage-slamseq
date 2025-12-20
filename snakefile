@@ -2,7 +2,7 @@ import os
 ## CONFIG:
 configfile: "config.yaml"
 # these are so lightweight that they can be run directly on the login node; no need for slurm or compute nodes
-localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, mark_no4sU_samples, multiqc, calc_nascent_total_reads
+localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads
 
 DONORS = ['donor1_rep1', 'donor2_rep1', 'donor1_rep2']
 sample_ids = list(config['sample_ids'].keys())
@@ -168,6 +168,8 @@ def get_donor_timepoints(donor):
     """
     timepoints = [info["timepoint"] for sample_id, info in config["sample_ids"].items() 
                   if info["donor"] == donor]
+    if donor == 'donor1_rep2':
+        timepoints.append('no4sU') # donor1_rep2 is missing no4sU; this + get_donor_sample_id will redirect it to borrow S9, whihc is donor1_rep1's no4sU control
     return timepoints
 
 def get_sample_from_donor_timepoint(donor, timepoint):
@@ -179,6 +181,10 @@ def get_sample_from_donor_timepoint(donor, timepoint):
     - otherwise print error
     """
     for sample_id, info in config["sample_ids"].items():
+        # donor1_rep1 and donor1_rep2 share the same control 4sU, so redirect the search.
+        if donor == 'donor1_rep2' and timepoint == 'no4sU':
+            donor = 'donor1_rep1'
+            print(f"donor id changed for {donor}.") 
         if info["donor"] == donor and str(info["timepoint"]) == str(timepoint):
             return sample_id
     print(
