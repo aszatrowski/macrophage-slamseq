@@ -222,8 +222,6 @@ rule rename_with_donor_timepoint:
     output:
         bam=f"data/donor_timepoint_symlinks/{{donor}}/{{timepoint}}{config['timepoint_unit']}.bam",
         bai=f"data/donor_timepoint_symlinks/{{donor}}/{{timepoint}}{config['timepoint_unit']}.bam.bai",
-    # params:
-    #     time_unit = config['timepoint_unit']
     shell:
         """
         mkdir -p $(dirname {output.bam})
