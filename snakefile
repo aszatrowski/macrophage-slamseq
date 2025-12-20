@@ -4,16 +4,16 @@ configfile: "config.yaml"
 # these are so lightweight that they can be run directly on the login node; no need for slurm or compute nodes
 localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, mark_no4sU_samples, multiqc, calc_nascent_total_reads
 
-DONORS = ['donor1_rep2']
+DONORS = ['donor1_rep1', 'donor2_rep1', 'donor1_rep2']
 sample_ids = list(config['sample_ids'].keys())
 
 rule all:
     input: 
-        expand(
-            "data/tmm_normalized/{donor}_reads_{readtype}.csv",
-            donor = DONORS,
-            readtype = ['nascent', 'total']
-        ),
+        # expand(
+        #     "data/tmm_normalized/{donor}_reads_{readtype}.csv",
+        #     donor = DONORS,
+        #     readtype = ['nascent', 'total']
+        # ),
         expand(
             "data/processed_reads/{donor}_reads_{readtype}.csv",
             donor = DONORS,
@@ -27,7 +27,7 @@ rule cat_fastqs:
     """
     input: 
         lambda wildcards: expand(
-            f"{config['data_path']}/{{sample_id}}_L{{seq_lane}}_R{{end}}_001.fastq.gz",  # ← double braces
+            f"{config['data_path']}/{{sample_id}}_L{{seq_lane}}_R{{end}}_001.fastq.gz",
             sample_id=wildcards.sample_id,
             end=wildcards.end,
             seq_lane=[f"{l:03d}" for l in config['sequencing_lanes']]
@@ -191,17 +191,26 @@ rule index_bam:
         samtools index --bai {input} -o {output}
         """
 
+def get_donor_timepoints(donor):
+    """
+    Helper function: retrieve all timepoints that exist for a given donor in the config file.
+    """
+    timepoints = [info["timepoint"] for sample_id, info in config["sample_ids"].items() 
+                  if info["donor"] == donor]
+    return timepoints
+
 def get_sample_from_donor_timepoint(donor, timepoint):
     """
     Given a donor (as requested in rule all:), and a specific timepoint, retrieves the corresponding sample
     """
     for sample_id, info in config["sample_ids"].items():
-        if info["donor"] == donor and info["timepoint"] == int(timepoint):
+        # Convert both to strings for comparison to handle type mismatches
+        if info["donor"] == donor and str(info["timepoint"]) == str(timepoint):
             return sample_id
-    raise ValueError(
+    print(
         f"No sample found for donor='{donor}' at timepoint='{timepoint}'. "
-        f"Available timepoints for {donor}: {get_donor_timepoints(donor)}"
     )
+    return None  # Explicit return instead of implicit
 
 rule rename_with_donor_timepoint:
     """
@@ -239,13 +248,6 @@ rule mark_no4sU_samples:
         ln -sf $(realpath {input.bai}) {output.bai}
         """
 
-def get_donor_timepoints(donor):
-    """
-    Helper function: retrieve all timepoints that exist for a given donor in the config file.
-    """
-    timepoints = [info["timepoint"] for sample_id, info in config["sample_ids"].items() 
-                  if info["donor"] == donor]
-    return sorted(set(timepoints))
 
 rule bam_to_cit:
     """
@@ -308,7 +310,7 @@ rule bam_to_cit:
         export _JAVA_OPTIONS="-Xmx{params.java_xmx}g -Xms{params.java_xms}g"
 
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Beginning CIT conversion..." >> $log_path 2>&1
-        gedi -e Bam2CIT -p output.cit \
+        gedi -e Bam2CIT output.cit \
             {params.bam_basenames} \
             $(basename {input.no4sU_bam}) >> $log_path 2>&1
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Conversion complete." >> $log_path 2>&1
@@ -384,7 +386,7 @@ rule grand_slam:
        runtime = 480, # 8 hours in minutes
        mem_mb = 42000,
     threads:
-        30, # bump up to 24
+        20, # bump up to 24
     benchmark:
         "benchmarks/{donor}.grandslam.benchmark.txt"
     shell: 
@@ -441,7 +443,7 @@ rule calc_nascent_total_reads:
 
 rule normalize_tmm:
     input: 
-        "data/processed_reads/{donor}_reads_{readtype}.csv",
+        read_counts = "data/processed_reads/{donor}_reads_{readtype}.csv",
     output: 
-        "data/tmm_normalized/{donor}_reads_{readtype}.csv",
+        normalized_counts = "data/tmm_normalized/{donor}_reads_{readtype}.csv",
     script: "scripts/normalize_tmm.R"
