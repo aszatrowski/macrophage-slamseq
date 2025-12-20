@@ -46,7 +46,7 @@ sample_ids:
     donor: donor1_rep1
     timepoint: 120
   LB-HT-28s-HT-09_S9:
-    donor: donor1_rep1  # Primary assignment
+    donor: donor1_rep1
     timepoint: 'no4sU'
   LB-HT-28s-HT-10_S10:
     donor: donor2_rep1

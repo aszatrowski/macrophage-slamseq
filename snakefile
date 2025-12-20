@@ -173,10 +173,13 @@ def get_donor_timepoints(donor):
 
 def get_sample_from_donor_timepoint(donor, timepoint):
     """
-    Given a donor (as requested in rule all:), and a specific timepoint, retrieves the corresponding sample
+    Given a donor (as requested in rule all:), and a specific timepoint, retrieves the corresponding sample id from config.yaml.
+    - convert to str if not already str(15) -> '15'; str('no4sU') -> 'no4sU'
+    - search through yaml dict for donor + timepoint_str
+    - return if match
+    - otherwise print error
     """
     for sample_id, info in config["sample_ids"].items():
-        # Convert both to strings for comparison to handle type mismatches
         if info["donor"] == donor and str(info["timepoint"]) == str(timepoint):
             return sample_id
     print(
@@ -189,28 +192,11 @@ rule rename_with_donor_timepoint:
     When GRAND-SLAM creates its QC plots by sample, it uses their filenames, and complicated names are unwieldy and uninterpretable, so create a symlink to each sample with just its timepoint as a name.
     """
     input:
-        bam=lambda w: f"data/aligned_bam/{get_sample_from_donor_timepoint(w.donor, w.timepoint)}.bam",
-        bai=lambda w: f"data/aligned_bam/{get_sample_from_donor_timepoint(w.donor, w.timepoint)}.bam.bai"
+        bam=lambda w: f"data/aligned_bam/{get_sample_from_donor_timepoint(w.donor, w.timepoint_str)}.bam",
+        bai=lambda w: f"data/aligned_bam/{get_sample_from_donor_timepoint(w.donor, w.timepoint_str)}.bam.bai"
     output:
-        bam=f"data/donor_timepoint_symlinks/{{donor}}/{{timepoint}}{config['timepoint_unit']}.bam",
-        bai=f"data/donor_timepoint_symlinks/{{donor}}/{{timepoint}}{config['timepoint_unit']}.bam.bai",
-    shell:
-        """
-        mkdir -p $(dirname {output.bam})
-        ln -sf $(realpath {input.bam}) {output.bam}
-        ln -sf $(realpath {input.bai}) {output.bai}
-        """
-
-rule mark_no4sU_samples:
-    """
-    Best practice for GRAND-SLAM is to provide a no-4sU control, and pass it as an argument when doing the nascent transcript calling. The simplest approach is just to add include the string 'no4sU' in the filename, so we create symlinks as above to mark those controls, following the specification in config.
-    """
-    input:
-        bam=lambda w: f"data/aligned_bam/{config['donor_controls'][w.donor]}.bam",
-        bai=lambda w: f"data/aligned_bam/{config['donor_controls'][w.donor]}.bam.bai",
-    output:
-        bam="data/donor_timepoint_symlinks/{donor}/control_no4sU.bam",
-        bai="data/donor_timepoint_symlinks/{donor}/control_no4sU.bam.bai"
+        bam="data/donor_timepoint_symlinks/{donor}/{timepoint_str}.bam",
+        bai="data/donor_timepoint_symlinks/{donor}/{timepoint_str}.bam.bai",
     shell:
         """
         mkdir -p $(dirname {output.bam})
@@ -256,19 +242,15 @@ rule bam_to_cit:
     """
     input:
         bams = lambda w: expand(
-            "data/donor_timepoint_symlinks/{donor}/{timepoint}{timepoint_unit}.bam",
+            "data/donor_timepoint_symlinks/{donor}/{timepoint_str}.bam",
             donor = w.donor,
-            timepoint = get_donor_timepoints(w.donor),
-            timepoint_unit = config['timepoint_unit']
+            timepoint_str = get_donor_timepoints(w.donor),
         ),
         bais = lambda w: expand(
-            "data/donor_timepoint_symlinks/{donor}/{timepoint}{timepoint_unit}.bam.bai",
+            "data/donor_timepoint_symlinks/{donor}/{timepoint_str}.bam.bai",
             donor = w.donor,
-            timepoint = get_donor_timepoints(w.donor),
-            timepoint_unit = config['timepoint_unit']
+            timepoint_str = get_donor_timepoints(w.donor),
         ),
-        no4sU_bam="data/donor_timepoint_symlinks/{donor}/control_no4sU.bam",
-        no4sU_bai="data/donor_timepoint_symlinks/{donor}/control_no4sU.bam.bai",
     output:
         cit_sample_set = "data/cit_sample_sets/{donor}.cit",
         cit_metadata = "data/cit_sample_sets/{donor}.cit.metadata.json",
@@ -294,7 +276,7 @@ rule bam_to_cit:
         echo "Logging to $log_path."
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying to scratch..." > $log_path 2>&1
         mkdir -p {params.scratch} >> $log_path 2>&1
-        cp {input.bams} {input.bais} {input.no4sU_bam} {input.no4sU_bai} {params.scratch}/ >> $log_path 2>&1
+        cp {input.bams} {input.bais} {params.scratch}/ >> $log_path 2>&1
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copy complete." >> $log_path 2>&1
 
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Generating output paths..." >> $log_path 2>&1
@@ -310,7 +292,7 @@ rule bam_to_cit:
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Beginning CIT conversion..." >> $log_path 2>&1
         gedi -e Bam2CIT -p output.cit \
             {params.bam_basenames} \
-            $(basename {input.no4sU_bam}) >> $log_path 2>&1
+             >> $log_path 2>&1
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Conversion complete." >> $log_path 2>&1
 
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Copying output back..." >> $log_path 2>&1
@@ -397,7 +379,7 @@ rule grand_slam:
             -prefix data/slam_quant/{wildcards.donor}/grandslam \
             -trim5p {params.trim5p} \
             -trim3p {params.trim3p} \
-            -no4sUpattern control_no4sU \
+            -no4sUpattern no4sU \
             -nthreads {threads} \
             -introns \
             -progress \
