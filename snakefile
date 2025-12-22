@@ -4,7 +4,8 @@ configfile: "config.yaml"
 # these are so lightweight that they can be run directly on the login node; no need for slurm or compute nodes
 localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads
 
-DONORS = ['donor1_rep1', 'donor2_rep1', 'donor1_rep2']
+# DONORS = ['donor1_rep1', 'donor2_rep1', 'donor1_rep2']
+DONORS = ['donor1_rep1', 'donor1_rep2']
 sample_ids = list(config['sample_ids'].keys())
 
 rule all:
