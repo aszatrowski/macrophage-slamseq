@@ -20,18 +20,18 @@ timepoint_counts <- readr::read_tsv(snakemake@input$read_table, show_col_types =
 # "$" is used to match the end of the string
 timepoint_prefixes <- stringr::str_subset(names(timepoint_counts), "_MAP$") |>
   stringr::str_remove("_MAP$")
-
+colnames(timepoint_counts) <- stringr::str_replace_all(colnames(timepoint_counts), "Readcount", "total_readcount")
 # Create nascent count columns
 for (prefix in timepoint_prefixes) {
   timepoint_counts <- timepoint_counts |>
-    dplyr::mutate("{prefix}_nascent_readcount" := .data[[paste0(prefix, "_Readcount")]] * 
+    dplyr::mutate("{prefix}_nascent_readcount" := .data[[paste0(prefix, "_total_readcount")]] * 
                                         .data[[paste0(prefix, "_MAP")]])
 }
 total_counts_table <- timepoint_counts |>
   dplyr::select(
     "Gene",
     "Symbol",
-    !contains("_nascent_readcount")
+    contains("_total_readcount")
   )
 nascent_counts_table <- timepoint_counts |>
   dplyr::select(

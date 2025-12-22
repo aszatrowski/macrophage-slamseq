@@ -1,0 +1,15 @@
+sample,timepoint,donor,replicate
+t_0m_total_readcount_donor1_rep1,0,donor1,1
+t_15m_total_readcount_donor1_rep1,15,donor1,1
+t_30m_total_readcount_donor1_rep1,30,donor1,1
+t_60m_total_readcount_donor1_rep1,60,donor1,1
+t_90m_total_readcount_donor1_rep1,90,donor1,1
+t_105m_total_readcount_donor1_rep1,105,donor1,1
+t_120m_total_readcount_donor1_rep1,120,donor1,1
+t_0m_total_readcount_donor1_rep2,0,donor1,2
+t_15m_total_readcount_donor1_rep2,15,donor1,2
+t_30m_total_readcount_donor1_rep2,30,donor1,2
+t_60m_total_readcount_donor1_rep2,60,donor1,2
+t_90m_total_readcount_donor1_rep2,90,donor1,2
+t_105m_total_readcount_donor1_rep2,105,donor1,2
+t_120m_total_readcount_donor1_rep2,120,donor1,2

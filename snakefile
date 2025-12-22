@@ -2,7 +2,7 @@ import os
 ## CONFIG:
 configfile: "config.yaml"
 # these are so lightweight that they can be run directly on the login node; no need for slurm or compute nodes
-localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_normalize_tmm
+localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, generate_edgeR_metadata
 
 # DONORS = ['donor1_rep1', 'donor2_rep1', 'donor1_rep2']
 DONORS = ['donor1_rep1', 'donor1_rep2']
@@ -11,7 +11,11 @@ sample_ids = list(config['sample_ids'].keys())
 rule all:
     input: 
         expand(
-            "outputs/merged_normalized_counts_{readtype}.csv",
+            "outputs/readcounts/merged_counts_{readtype}.csv",
+            readtype = ['total', 'nascent']
+        ),
+        expand(
+            "outputs/readcounts/read_metadata_{readtype}.csv",
             readtype = ['total', 'nascent']
         ),
         'outputs/multiqc_report.html'
@@ -431,7 +435,7 @@ rule calc_nascent_total_reads:
         nascent_counts = "data/processed_reads/{donor}_reads_nascent.csv"
     script: "scripts/process_read_table.R"
 
-rule merge_normalize_tmm:
+rule merge_reads_across_donors:
     input: 
         read_counts = lambda wildcards: expand(
             "data/processed_reads/{donor}_reads_{readtype}.csv",
@@ -439,8 +443,15 @@ rule merge_normalize_tmm:
             readtype = wildcards.readtype
         )
     output: 
-        merged_normalized_counts = "outputs/merged_normalized_counts_{readtype}.csv",
+        merged_counts = "outputs/readcounts/merged_counts_{readtype}.csv",
     # the R script needs access to the donor list, but DONORS isn't passed as a wildcard (since it's passed in expand()), so we provide it explicitly here.
     params:
         donors = DONORS
-    script: "scripts/merge_normalize_tmm.R"
+    script: "scripts/merge_reads_across_donors.R"
+
+rule generate_edgeR_metadata:
+    input: 
+        merged_counts = "outputs/readcounts/merged_counts_{readtype}.csv",
+    output: 
+        metadata = "outputs/readcounts/read_metadata_{readtype}.csv",
+    script: "scripts/generate_edgeR_metadata.R"
