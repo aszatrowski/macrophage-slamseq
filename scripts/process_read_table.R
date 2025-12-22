@@ -1,10 +1,7 @@
-library(readr)
-library(dplyr)
-library(stringr)
-
+library(dplyr, quietly = TRUE)
 # at runtime, snakemake adds an environment object with all input and output paths as strings
 # snakemake@input$read_table is a string containing the path to the read table file
-timepoint_counts <- readr::read_tsv(snakemake@input$read_table) |>
+timepoint_counts <- readr::read_tsv(snakemake@input$read_table, show_col_types = FALSE) |>
   filter(!stringr::str_detect(Gene, "_intronic")) |>
   dplyr::select(
     "Gene",
@@ -21,22 +18,22 @@ timepoint_counts <- readr::read_tsv(snakemake@input$read_table) |>
 
 # get the timepoint prefixes from the columns; using MAP instead of Readcount correctly excludes the control.
 # "$" is used to match the end of the string
-timepoint_prefixes <- stringr::str_subset(names(timepoint_counts), "_MAP$") %>%
+timepoint_prefixes <- stringr::str_subset(names(timepoint_counts), "_MAP$") |>
   stringr::str_remove("_MAP$")
 
 # Create nascent count columns
 for (prefix in timepoint_prefixes) {
-  timepoint_counts <- timepoint_counts %>%
+  timepoint_counts <- timepoint_counts |>
     dplyr::mutate("{prefix}_nascent_readcount" := .data[[paste0(prefix, "_Readcount")]] * 
                                         .data[[paste0(prefix, "_MAP")]])
 }
-total_counts_table <- timepoint_counts %>%
+total_counts_table <- timepoint_counts |>
   dplyr::select(
     "Gene",
     "Symbol",
-    contains("Readcount")
+    !contains("_nascent_readcount")
   )
-nascent_counts_table <- timepoint_counts %>%
+nascent_counts_table <- timepoint_counts |>
   dplyr::select(
     "Gene",
     "Symbol",
