@@ -436,6 +436,9 @@ rule calc_nascent_total_reads:
     script: "scripts/process_read_table.R"
 
 rule merge_reads_across_donors:
+    """
+    Merge read counts across donors into two CSV files, one for nascent counts and the other for total counts.
+    """
     input: 
         read_counts = lambda wildcards: expand(
             "data/processed_reads/{donor}_reads_{readtype}.csv",
@@ -450,6 +453,9 @@ rule merge_reads_across_donors:
     script: "scripts/merge_reads_across_donors.R"
 
 rule generate_edgeR_metadata:
+    """
+    Using string parsing over the colnames() of the CSV, extract the timepoints, donors, and replicates for each column and assemble a data.frame for edgeR to read, and export it as CSV.
+    """
     input: 
         merged_counts = "outputs/readcounts/merged_counts_{readtype}.csv",
     output: 
