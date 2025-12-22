@@ -381,7 +381,7 @@ rule grand_slam:
        runtime = 480, # 8 hours in minutes
        mem_mb = 42000,
     threads:
-        20, # bump up to 24
+        14, # bump up to 24
     benchmark:
         "benchmarks/{donor}.grandslam.benchmark.txt"
     shell: 

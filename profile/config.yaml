@@ -1,6 +1,6 @@
 # cluster settings:
 executor: slurm
-cores: 40
+cores: 42
 jobs: 5
 use-singularity: true # activate singularity for container
 singularity-args: "--no-home --home /scratch/midway3/aszatrowski --bind /project/lbarreiro,/scratch/midway3/aszatrowski" # give container access to all of lbarreiro & personal scratch
