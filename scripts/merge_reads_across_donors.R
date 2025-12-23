@@ -13,4 +13,4 @@ merged_counts_df <- purrr::reduce(
     suffix = paste0("_", snakemake@params$donor)
   )
 )
-readr::write_csv(merged_counts_df, snakemake@output$merged_counts )
+readr::write_csv(merged_counts_df, snakemake@output$merged_counts)

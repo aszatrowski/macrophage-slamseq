@@ -30,13 +30,11 @@ for (prefix in timepoint_prefixes) {
 total_counts_table <- timepoint_counts |>
   dplyr::select(
     "Gene",
-    "Symbol",
     contains("_total_readcount")
   )
 nascent_counts_table <- timepoint_counts |>
   dplyr::select(
     "Gene",
-    "Symbol",
     contains("_nascent_readcount")
   )
 readr::write_csv(
