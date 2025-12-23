@@ -1,5 +1,5 @@
 # laod data
-merged_read_counts <- readr::read_csv(snakemake@input$merged_counts)
+merged_read_counts <- readr::read_csv(snakemake@input$merged_counts, show_col_types = FALSE)
 # Extract sample names (exclude Gene and Symbol columns)
 samples <- grep("^t_\\d+m_(nascent|total)_readcount", colnames(merged_read_counts), value = TRUE)
 

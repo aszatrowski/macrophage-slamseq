@@ -2,14 +2,16 @@ library(dplyr, quietly = TRUE)
 # at runtime, snakemake adds an environment object with all input and output paths as strings
 # snakemake@input$read_table is a string containing the path to the read table file
 timepoint_counts <- readr::read_tsv(snakemake@input$read_table, show_col_types = FALSE) |>
-  filter(!stringr::str_detect(Gene, "_intronic")) |>
+  dplyr::filter(!stringr::str_detect(Gene, "_intronic")) |>
+  dplyr::mutate(across(where(is.double), ~ replace(.x, is.na(.x), 0))) |>
   dplyr::select(
     "Gene",
     "Symbol",
     contains("Readcount"),
     # "MAP" is the Bayesian maxium a posteriori estimate of the readcount
     # keep this and discard the rest of the distribution specification
-    contains("MAP")
+    contains("MAP"),
+    -contains("no4sU") # drop no4sU readcount columns
   ) |>
   # compatibility: replace all spaces with underscores
   dplyr::rename_with(~ stringr::str_replace_all(., " ", "_")) |>

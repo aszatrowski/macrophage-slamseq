@@ -2,7 +2,7 @@ import os
 ## CONFIG:
 configfile: "config.yaml"
 # these are so lightweight that they can be run directly on the login node; no need for slurm or compute nodes
-localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, generate_edgeR_metadata
+localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, generate_edgeR_metadata, dge, map_ensg_genesymbol
 
 # DONORS = ['donor1_rep1', 'donor2_rep1', 'donor1_rep2']
 DONORS = ['donor1_rep1', 'donor1_rep2']
@@ -11,13 +11,10 @@ sample_ids = list(config['sample_ids'].keys())
 rule all:
     input: 
         expand(
-            "outputs/readcounts/merged_counts_{readtype}.csv",
+            "outputs/dge_results/summary_stats_{readtype}.csv",
             readtype = ['total', 'nascent']
         ),
-        expand(
-            "outputs/readcounts/read_metadata_{readtype}.csv",
-            readtype = ['total', 'nascent']
-        ),
+        "data/processed_reads/ensg_genesymbol_mapping.csv",
         'outputs/multiqc_report.html'
 
 rule cat_fastqs:
@@ -183,7 +180,7 @@ def get_sample_from_donor_timepoint(donor, timepoint):
         # donor1_rep1 and donor1_rep2 share the same control 4sU, so redirect the search.
         if donor == 'donor1_rep2' and timepoint == 'no4sU':
             donor = 'donor1_rep1'
-            print(f"donor id changed for {donor}.") 
+            # print(f"donor id changed for {donor}.") 
         if info["donor"] == donor and str(info["timepoint"]) == str(timepoint):
             return sample_id
     print(
@@ -435,6 +432,16 @@ rule calc_nascent_total_reads:
         nascent_counts = "data/processed_reads/{donor}_reads_nascent.csv"
     script: "scripts/process_read_table.R"
 
+rule map_ensg_genesymbol:
+    input: 
+        expand(
+            "data/slam_quant/{donor}/grandslam.tsv.gz",
+            donor = DONORS[0] # only need to run once
+        )
+    output: 
+        symbol_ensg_mapping = "data/processed_reads/ensg_genesymbol_mapping.csv"
+    script: "scripts/map_ensg_symbol.R"
+
 rule merge_reads_across_donors:
     """
     Merge read counts across donors into two CSV files, one for nascent counts and the other for total counts.
@@ -461,3 +468,12 @@ rule generate_edgeR_metadata:
     output: 
         metadata = "outputs/readcounts/read_metadata_{readtype}.csv",
     script: "scripts/generate_edgeR_metadata.R"
+
+rule dge:
+    input: 
+        merged_counts = "outputs/readcounts/merged_counts_{readtype}.csv",
+        metadata = "outputs/readcounts/read_metadata_{readtype}.csv",
+        symbol_ensg_mapping = "data/processed_reads/ensg_genesymbol_mapping.csv",
+    output: 
+        dge_summary_stats = "outputs/dge_results/summary_stats_{readtype}.csv"
+    script: "scripts/dge.R"
