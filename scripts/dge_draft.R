@@ -1,5 +1,5 @@
 library(edgeR)
-nascent_counts_df <- readr::read_csv(snakemake@input$merged_counts, show_col_types = FALSE) |>
+nascent_counts_df <- readr::read_csv("outputs/readcounts/merged_counts_nascent.csv") |>
   dplyr::select("Gene", starts_with("t_0m"), starts_with("t_120m")) |>
   dplyr::mutate(across(where(is.double), ~ replace(.x, is.na(.x), 0)))
 
@@ -23,11 +23,5 @@ qlf <- glmQLFTest(fit, coef = 2)
 # coef=2 tests the t_120m coefficient (the time effect)
 
 # Extract results
-results <- topTags(qlf, n = Inf, adjust.method = "BH", sort.by = "PValue")
-
-symbol_ensg_mapping <- readr::read_csv(snakemake@input$symbol_ensg_mapping, show_col_types = FALSE)
-summstats <- results$table |>
-  dplyr::left_join(symbol_ensg_mapping, by = c("genes" = "Gene")) |>
-  dplyr::rename(Gene = "Symbol", ENSG = "genes") |>
-  dplyr::select(Gene, ENSG, logFC, logCPM, F, PValue, FDR)
-readr::write_csv(summstats, snakemake@output$dge_summary_stats)
+results <- topTags(qlf, n = Inf, sort.by = "Pvalue")
+head(results)
