@@ -12,9 +12,9 @@ rule all:
     input: 
         expand(
             "outputs/dge_results/summary_stats_{readtype}.csv",
-            readtype = ['total', 'nascent']
+            # readtype = ['total', 'nascent']
+            readtype = ['nascent']
         ),
-        "data/processed_reads/ensg_genesymbol_mapping.csv",
         'outputs/multiqc_report.html'
 
 rule cat_fastqs:

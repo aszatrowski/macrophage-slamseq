@@ -2,6 +2,9 @@
 .snakemake/
 .gedi/
 renv/
+.RData
+.Rhistory
+Rplots.pdf
 data/
 tmp/
 outputs/multiqc_data/
