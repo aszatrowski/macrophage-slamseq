@@ -1,4 +1,6 @@
 library(ggplot2)
+set.seed(100) # for reproducibility of ggrepel label positions; otherwise unnecessary
+
 fdr_threshold <- snakemake@params$fdr_threshold
 logFC_threshold <- snakemake@params$logFC_threshold
 comparison <- snakemake@wildcards$comparison
