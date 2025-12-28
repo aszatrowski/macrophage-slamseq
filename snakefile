@@ -2,7 +2,7 @@ import os
 ## CONFIG:
 configfile: "config.yaml"
 # these are so lightweight that they can be run directly on the login node; no need for slurm or compute nodes
-localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, dge, map_ensg_genesymbol, volcano_plot, timecourse_dge_plot
+localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, dge, map_ensg_genesymbol, volcano_plot, timecourse_dge_plot, effect_size_correlations_plot
 
 # DONORS = ['donor1_rep1', 'donor2_rep1', 'donor1_rep2']
 DONORS = ['donor1_rep1', 'donor1_rep2']
@@ -10,6 +10,10 @@ sample_ids = list(config['sample_ids'].keys())
 
 rule all:
     input: 
+        expand(
+            "outputs/effect_size_correlations/corr_{comparison}.pdf",
+            comparison = ['30_vs_0m'],
+        ),
         expand(
             "outputs/timecourse_dge_plot_{readtype}.pdf",
             readtype = ['total', 'nascent'],
@@ -500,3 +504,17 @@ rule timecourse_dge_plot:
         max_genes_to_plot = 15,
         time_unit = "min",
     script: "scripts/plot_dge_timecourse.R"
+
+rule effect_size_correlations_plot:
+    input: 
+        # nascent = "outputs/dge_results/summary_stats_nascent.csv",
+        # total = "outputs/dge_results/summary_stats_total.csv",
+        dge_summary_stats = expand(
+            "outputs/dge_results/summary_stats_{readtype}.csv",
+            readtype = ['nascent', 'total']
+        )
+    output: 
+        corr_plot = "outputs/effect_size_correlations/corr_{comparison}.pdf"
+    params:
+        palette = config['plot_color_palette'],
+    script: "scripts/plot_effect_size_correlations.R"
