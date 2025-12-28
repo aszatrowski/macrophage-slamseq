@@ -2,7 +2,7 @@ import os
 ## CONFIG:
 configfile: "config.yaml"
 # these are so lightweight that they can be run directly on the login node; no need for slurm or compute nodes
-localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, generate_edgeR_metadata, dge, map_ensg_genesymbol, volcano_plot
+localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, dge, map_ensg_genesymbol, volcano_plot
 
 # DONORS = ['donor1_rep1', 'donor2_rep1', 'donor1_rep2']
 DONORS = ['donor1_rep1', 'donor1_rep2']
@@ -464,16 +464,6 @@ rule merge_reads_across_donors:
     params:
         donors = DONORS
     script: "scripts/merge_reads_across_donors.R"
-
-rule generate_edgeR_metadata:
-    """
-    Using string parsing over the colnames() of the CSV, extract the timepoints, donors, and replicates for each column and assemble a data.frame for edgeR to read, and export it as CSV.
-    """
-    input: 
-        merged_counts = "outputs/readcounts/merged_counts_{readtype}.csv",
-    output: 
-        metadata = "outputs/readcounts/read_metadata_{readtype}.csv",
-    script: "scripts/generate_edgeR_metadata.R"
 
 rule dge:
     input: 
