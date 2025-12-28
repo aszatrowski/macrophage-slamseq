@@ -101,4 +101,4 @@ gedi_index_dir: 'data/gedi_index'
 # Should bam_to_cit write several progress updates per second to its log file? Nice for keeping track, but log file will be ~60MB by completion.
 bam_to_cit_progress: False
 
-plot_color_palette: ["#0a1128","#ffddd2","#e29578","#6f7d8c","#77a0a9"]
+plot_color_palette: ["#0a1128","#e29578","#ffddd2","#6f7d8c","#77a0a9"]
