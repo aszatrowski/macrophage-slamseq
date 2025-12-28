@@ -30,7 +30,9 @@ effect_size_corr_plot <- ggplot(
   )
 ) +
   geom_point(alpha = 0.6, color = palette[1]) +
-  geom_smooth(method = "lm", color = palette[2], se = TRUE) +
+  geom_smooth(method = "lm", color = palette[2], se = FALSE) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth = 1, color = palette[4]) +
+  coord_fixed() + # equal scaling for x and y axes, so y = x line is at 45 degrees
   labs(
     x = bquote("log"[2] ~ "Fold Change (Total)"),
     y = bquote("log"[2] ~ "Fold Change (Nascent)"),
@@ -41,6 +43,6 @@ effect_size_corr_plot <- ggplot(
 ggsave(
   filename = snakemake@output$corr_plot,
   plot = effect_size_corr_plot,
-  width = 8,
+  width = 4,
   height = 8
 )
