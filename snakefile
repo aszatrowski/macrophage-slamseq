@@ -14,7 +14,7 @@ rule all:
             "outputs/volcano_plots/volcanoplot_{readtype}-{comparison}.pdf",
             # readtype = ['total', 'nascent']
             readtype = ['nascent'],
-            comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','120_vs_0m']
+            comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
         ),
         expand(
             "outputs/dge_results/summary_stats_{readtype}.csv",
@@ -491,5 +491,7 @@ rule volcano_plot:
         volcano_plot = "outputs/volcano_plots/volcanoplot_{readtype}-{comparison}.pdf",
     params:
         fdr_threshold = 0.05,
-        logFC_threshold = 1
+        logFC_threshold = 1,
+        plot_width = 5,
+        plot_height = 8,
     script: "scripts/volcano_plot.R"
