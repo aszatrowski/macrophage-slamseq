@@ -12,7 +12,7 @@ rule all:
     input: 
         expand(
             "outputs/effect_size_correlations/corr_{comparison}.pdf",
-            comparison = ['30_vs_0m'],
+            comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
         ),
         expand(
             "outputs/timecourse_dge_plot_{readtype}.pdf",
