@@ -2,7 +2,7 @@ library(edgeR)
 read_counts_df <- readr::read_csv(snakemake@input$merged_counts, show_col_types = FALSE) |>
   dplyr::mutate(across(where(is.double), ~ replace(.x, is.na(.x), 0)))
 
-timepoints <- as.factor(gsub("t_(.+)m_nascent.*", "\\1", colnames(read_counts_df)[-1]))
+timepoints <- as.factor(gsub("t_(.+)m_(nascent|total).*", "\\1", colnames(read_counts_df)[-1]))
 
 dge <- DGEList(
   counts = read_counts_df[, -1],
@@ -13,11 +13,8 @@ dge <- DGEList(
 # Filter lowly expressed genes. additional min.counts are required for NAs/too-low counts in total set
 # Require at least min.count reads in at least 2 samples (one replicate pair)
 keep <- filterByExpr(dge, min.count = 10, min.total.count = 15)
-length(keep)
 # Additional: remove genes with zeros in more than 50% of samples
-keep2 <- rowSums(dge$counts[keep, ] > 0) >= 7  # At least 7/14 samples non-zero
-length(keep2)
-print(length(keep & keep2))
+keep2 <- rowSums(dge$counts > 0) >= 7  # At least 7/14 samples non-zero
 
 dge <- dge[(keep & keep2), , keep.lib.sizes = FALSE]
 dge <- calcNormFactors(dge, method = "TMM")
