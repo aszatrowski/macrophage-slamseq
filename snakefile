@@ -483,8 +483,9 @@ rule volcano_plot:
     params:
         fdr_threshold = 0.05,
         logFC_threshold = 1,
-        plot_width = 5,
-        plot_height = 8,
+        palette = config['plot_color_palette'],
+        plot_width = 8,
+        plot_height = 12,
     script: "scripts/volcano_plot.R"
 
 rule timecourse_dge_plot:
