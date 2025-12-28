@@ -1,9 +1,11 @@
 library(ggplot2)
+suppressWarnings(library(dplyr))
 
 summary_stats <- readr::read_csv(snakemake@input$dge_summary_stats, show_col_types = FALSE)
 fdr_threshold <- snakemake@params$fdr_threshold
 logFC_threshold <- snakemake@params$logFC_threshold
 n_timepoints_dge_threshold <- snakemake@params$n_timepoints_dge_threshold
+max_genes_to_plot <- snakemake@params$max_genes_to_plot 
 
 # snakemake provides params twice, once named and once unnamed; extract only the named ones and construct a string for plot subtitle
 keys <- names(snakemake@params)
@@ -20,10 +22,14 @@ extract_de_genes <- function(df, fdr_threshold = 0.05, logFC_threshold = 1) {
 # use by() to call extract_de_genes() over all values of "timepoint", return a named list of DFs with summary stats
 de_genes_list <- by(summary_stats, summary_stats$timepoint, extract_de_genes)
 
-# retrieve genes that are DE in >50% of conditions
+# retrieve genes that are DE in >50% of conditions, up to max_genes_to_plot
 de_genes_all <- do.call(rbind, de_genes_list)
-de_gene_counts <- table(de_genes_all$Gene)
-de_genes_frequent <- names(de_gene_counts[de_gene_counts > n_timepoints_dge_threshold])
+de_gene_counts <- sort(table(de_genes_all$Gene), decreasing = TRUE)
+print(de_gene_counts)
+de_genes_frequent <- head(
+  names(de_gene_counts[de_gene_counts > n_timepoints_dge_threshold]),
+  max_genes_to_plot
+)
 
 # create a DF with reference FC=0 at timepoint 0 for all genes in de_genes_frequent
 reference_rows_df <- data.frame(matrix(
