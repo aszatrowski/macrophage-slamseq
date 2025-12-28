@@ -37,7 +37,7 @@ volcano_plot <- ggplot(summary_stats, aes(x = logFC, y = -log10(FDR))) +
   labs(
     x = bquote(log[2] ~ "(FC)"),
     y = bquote(-log[10] ~ "(FDR)"),
-    title = paste("Volcano Plot:", comparison),
+    title = paste("Volcano Plot:", snakemake@wildcards$readtype, comparison),
   ) +
   theme(legend.title = element_blank())
 

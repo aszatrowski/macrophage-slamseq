@@ -53,9 +53,11 @@ timecourse_dge_plot <- ggplot(de_genes_timecourse, aes(x = timepoint, y = logFC,
     x = paste0("Timepoint ", "(", snakemake@params$time_unit, ")"),
     y = bquote(log[2] ~ "(FC)"),
     title = paste0(
-      "Time series for genes differentially expressed in >",
+      "Time series for DEGs in >",
       n_timepoints_dge_threshold,
-      " timepoints"
+      " timepoints, ",
+      snakemake@wildcards$readtype,
+      " RNA"
     ),
     subtitle = params_string
   )
