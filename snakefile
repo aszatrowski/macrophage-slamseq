@@ -2,7 +2,7 @@ import os
 ## CONFIG:
 configfile: "config.yaml"
 # these are so lightweight that they can be run directly on the login node; no need for slurm or compute nodes
-localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, dge, map_ensg_genesymbol, volcano_plot
+localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, dge, map_ensg_genesymbol, volcano_plot, timecourse_dge_plot
 
 # DONORS = ['donor1_rep1', 'donor2_rep1', 'donor1_rep2']
 DONORS = ['donor1_rep1', 'donor1_rep2']
@@ -10,6 +10,11 @@ sample_ids = list(config['sample_ids'].keys())
 
 rule all:
     input: 
+        expand(
+            "outputs/timecourse_dge_plot_{readtype}.pdf",
+            # readtype = ['total', 'nascent']
+            readtype = ['nascent']
+        ),
         expand(
             "outputs/volcano_plots/volcanoplot_{readtype}-{comparison}.pdf",
             # readtype = ['total', 'nascent']
@@ -468,7 +473,6 @@ rule merge_reads_across_donors:
 rule dge:
     input: 
         merged_counts = "outputs/readcounts/merged_counts_{readtype}.csv",
-        metadata = "outputs/readcounts/read_metadata_{readtype}.csv",
         symbol_ensg_mapping = "data/processed_reads/ensg_genesymbol_mapping.csv",
     output: 
         dge_summary_stats = "outputs/dge_results/summary_stats_{readtype}.csv"
@@ -485,3 +489,15 @@ rule volcano_plot:
         plot_width = 5,
         plot_height = 8,
     script: "scripts/volcano_plot.R"
+
+rule timecourse_dge_plot:
+    input: 
+        dge_summary_stats = "outputs/dge_results/summary_stats_{readtype}.csv"
+    output: 
+        timecourse_dge_plot = "outputs/timecourse_dge_plot_{readtype}.pdf",
+    params:
+        n_timepoints_dge_threshold = 2,
+        fdr_threshold = 0.05,
+        logFC_threshold = 1,
+        time_unit = "min",
+    script: "scripts/plot_dge_timecourse.R"
