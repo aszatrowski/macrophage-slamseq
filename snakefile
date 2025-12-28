@@ -12,19 +12,16 @@ rule all:
     input: 
         expand(
             "outputs/timecourse_dge_plot_{readtype}.pdf",
-            # readtype = ['total', 'nascent']
-            readtype = ['nascent']
+            readtype = ['total', 'nascent'],
         ),
         expand(
             "outputs/volcano_plots/volcanoplot_{readtype}-{comparison}.pdf",
-            # readtype = ['total', 'nascent']
-            readtype = ['nascent'],
+            readtype = ['total', 'nascent'],
             comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
         ),
         expand(
             "outputs/dge_results/summary_stats_{readtype}.csv",
-            # readtype = ['total', 'nascent']
-            readtype = ['nascent']
+            readtype = ['total', 'nascent'],
         ),
         'outputs/multiqc_report.html'
 
@@ -46,7 +43,7 @@ rule cat_fastqs:
 
 rule fastp:
     """
-    Runs fastp for quality control and adapter trimmming. fastp (https://github.com/OpenGene/fastp) is a faster alternative to fastqc + trimmomatic/cutadapt, and crucially only needs to be run once, rather than fastqc > trim > fastqc. Though fastp can dynamically detect adapter sequences quite efficiently, in practice it misses bases on the ends, which introduces artificial mismatches (adapter contamination), which may reduce T>C substitution calling downstream, so manual specification is recommended.
+    Runs fastp for quality control and adapter trimming. fastp (https://github.com/OpenGene/fastp) is a faster alternative to fastqc + trimmomatic/cutadapt, and crucially only needs to be run once, rather than fastqc > trim > fastqc. Though fastp can dynamically detect adapter sequences quite efficiently, in practice it misses bases on the ends, which introduces artificial mismatches (adapter contamination), which may reduce T>C substitution calling downstream, so manual specification is recommended.
     The parameters are configurd for paired-end sequencing, so you'll need to modify if you have single-end. See the fastp docs for details.
     Outputs an html webpage and a machine-readable json QC summary for each sample; multiqc will take the json as input for its own summary.
     """

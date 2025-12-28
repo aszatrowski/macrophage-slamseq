@@ -17,6 +17,7 @@ length(keep)
 # Additional: remove genes with zeros in more than 50% of samples
 keep2 <- rowSums(dge$counts[keep, ] > 0) >= 7  # At least 7/14 samples non-zero
 length(keep2)
+print(length(keep & keep2))
 
 dge <- dge[(keep & keep2), , keep.lib.sizes = FALSE]
 dge <- calcNormFactors(dge, method = "TMM")
