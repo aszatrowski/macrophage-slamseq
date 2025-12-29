@@ -25,7 +25,6 @@ de_genes_list <- by(summary_stats, summary_stats$timepoint, extract_de_genes)
 # retrieve genes that are DE in >50% of conditions, up to max_genes_to_plot
 de_genes_all <- do.call(rbind, de_genes_list)
 de_gene_counts <- sort(table(de_genes_all$Gene), decreasing = TRUE)
-print(de_gene_counts)
 de_genes_frequent <- head(
   names(de_gene_counts[de_gene_counts > n_timepoints_dge_threshold]),
   max_genes_to_plot
