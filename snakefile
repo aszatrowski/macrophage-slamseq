@@ -1,8 +1,8 @@
 import os
 ## CONFIG:
 configfile: "config.yaml"
-# these are so lightweight that they can be run directly on the login node; no need for slurm or compute nodes
-localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, dge, map_ensg_genesymbol, volcano_plot, timecourse_dge_plot, effect_size_correlations_plot
+# these jobs are so lightweight that they can be run directly on the login node; no need for slurm or compute nodes
+localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, dge, map_ensg_genesymbol, volcano_plot, timecourse_dge_plot, effect_size_correlations_plot, venn_diagram_plot
 
 # DONORS = ['donor1_rep1', 'donor2_rep1', 'donor1_rep2']
 DONORS = ['donor1_rep1', 'donor1_rep2']
@@ -10,6 +10,10 @@ sample_ids = list(config['sample_ids'].keys())
 
 rule all:
     input: 
+        expand(
+            "outputs/venn_diagrams/venn_{comparison}.png",
+            comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
+        ),
         expand(
             "outputs/effect_size_correlations/corr_{comparison}.pdf",
             comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
@@ -518,3 +522,19 @@ rule effect_size_correlations_plot:
     params:
         palette = config['plot_color_palette'],
     script: "scripts/plot_effect_size_correlations.R"
+
+rule venn_diagram_plot:
+    input: 
+        # nascent = "outputs/dge_results/summary_stats_nascent.csv",
+        # total = "outputs/dge_results/summary_stats_total.csv",
+        dge_summary_stats = expand(
+            "outputs/dge_results/summary_stats_{readtype}.csv",
+            readtype = ['nascent', 'total']
+        )
+    output: 
+        venn_diagram = "outputs/venn_diagrams/venn_{comparison}.png"
+    params:
+        fdr_threshold = 0.05,
+        logFC_threshold = 1,
+        palette = config['plot_color_palette'],
+    script: "scripts/plot_venn_diagram.R"
