@@ -37,25 +37,31 @@ VennDiagram::venn.diagram(
   filename = snakemake@output$venn_diagram,
   output=TRUE,
 
+  # Circles
   fill = snakemake@params$palette[1:length(deg_set_list)],
   alpha = 0.5,
   lwd = 0,
   lty = "blank",
 
-  cex = 10,
+  # Numeric labels
   fontface = "bold",
   fontfamily = "sans",
 
-  cat.cex = 10,
+  # category labels
   cat.fontface = "bold",
   cat.fontfamily = "sans",
 
-  margin = 0.1,
 
-  # VennDiagram takes sizes in pixels and can't guess file type from filename
+  main = paste(
+    "Venn Diagram: Total and Nascent RNA for",
+    snakemake@wildcards$comparison
+  ),
+  sub = paste0(
+    "DEGs (FDR < ", fdr_threshold,
+    ", |logFC| > ", logFC_threshold, ")"
+  ),
+  main.fontfamily = "sans",
+  sub.fontfamily = "sans",
+
   imagetype="png",
-  height = 8000,
-  width = 8000,
-  units = "px",
-  resolution = 300
 )
