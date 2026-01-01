@@ -1,5 +1,7 @@
+# Activate renv environment
+source("renv/activate.R")
 library(ggplot2)
-set.seed(100) # for reproducibility of ggrepel label positions; otherwise unnecessary
+set.seed(100) # for reproducibility of ggrepel label positions, ensuring that git doesn't register reruns as changes; otherwise unnecessary
 
 fdr_threshold <- snakemake@params$fdr_threshold
 logFC_threshold <- snakemake@params$logFC_threshold

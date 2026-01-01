@@ -1,3 +1,5 @@
+# Activate renv environment
+source("renv/activate.R")
 library(dplyr, quietly = TRUE)
 # at runtime, snakemake adds an environment object with all input and output paths as strings
 # snakemake@input$read_table is a string containing the path to the read table file

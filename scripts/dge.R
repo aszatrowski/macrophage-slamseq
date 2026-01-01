@@ -1,3 +1,5 @@
+# Activate renv environment
+source("renv/activate.R")
 library(edgeR)
 read_counts_df <- readr::read_csv(snakemake@input$merged_counts, show_col_types = FALSE) |>
   dplyr::mutate(across(where(is.double), ~ replace(.x, is.na(.x), 0)))

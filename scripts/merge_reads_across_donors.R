@@ -1,3 +1,5 @@
+# Activate renv environment
+source("renv/activate.R")
 read_counts_list <- lapply(snakemake@input$read_counts, readr::read_csv, show_col_types = FALSE)
 # Remove columns that are not shared across all data frames
 shared_columns <- intersect(

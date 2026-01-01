@@ -1,3 +1,5 @@
+# Activate renv environment
+source("renv/activate.R")
 suppressWarnings(library(dplyr))
 library(ggplot2)
 
