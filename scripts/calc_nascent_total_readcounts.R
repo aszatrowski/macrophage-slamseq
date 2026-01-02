@@ -5,7 +5,7 @@ library(dplyr, quietly = TRUE)
 # snakemake@input$read_table is a string containing the path to the read table file
 timepoint_counts <- readr::read_tsv(snakemake@input$read_table, show_col_types = FALSE) |>
   dplyr::filter(!stringr::str_detect(Gene, "_intronic")) |>
-  # replace NA readcounts with 0. I'm not sure the biological interpretation of NA here, but NA representing undetected transcript seems reasonable, and low counts will get filtered out by edgeR anyway.
+  # replace NA readcounts with 0. I'm not sure the biological interpretation of NA here (my best guess is "≥1 transcript detected, but too sparsely expressed for the GRAND-SLAM NTR model to converge"). edgeR requires 0 for unexpressed genes (NAs cause errors), so this seems like the safest option. 
   dplyr::mutate(across(where(is.double), ~ replace(.x, is.na(.x), 0))) |>
   dplyr::select(
     "Gene",
