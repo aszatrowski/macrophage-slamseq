@@ -1,4 +1,3 @@
-import os
 ## CONFIG:
 configfile: "config.yaml"
 # these jobs are so lightweight that they can be run directly on the login node; no need for slurm or compute nodes
