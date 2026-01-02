@@ -4,7 +4,6 @@ configfile: "config.yaml"
 # these jobs are so lightweight that they can be run directly on the login node; no need for slurm or compute nodes
 localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, dge, map_ensg_genesymbol, volcano_plot, timecourse_dge_plot, effect_size_correlations_plot, venn_diagram_plot
 
-# DONORS = ['donor1_rep1', 'donor2_rep1', 'donor1_rep2']
 DONORS = ['donor1_rep1', 'donor1_rep2']
 sample_ids = list(config['sample_ids'].keys())
 
@@ -85,7 +84,7 @@ rule fastp:
 rule star:
     """
     Uses STAR (https://github.com/alexdobin/STAR) to align the trimmed sequences.
-    STAR is heavily I/O limited during its complex alignment computations, so I have snakemake copy all the necessary files to the /scratch/ filesystem and run the alignment itself there, where they won't compute with everyone else's I/O. According to my basic benchmarking, this massively increases CPU efficiency (order ~30X), where efficiency = CPU active time / total clock time. When the alignment finishes, it copies the results back to their destination in /project/ and deletes everything from /scratch/.
+    STAR is heavily I/O limited during its complex alignment computations, so I have snakemake copy all the necessary files to the /scratch/ filesystem and run the alignment itself there, where they won't compute with everyone else's I/O. According to my basic benchmarking, this massively increases CPU efficiency (order ~30X), where efficiency = CPU active time / total clock time. When the alignment finishes, it copies the results back to their destination in /project/.../slamseq (the working directory) and deletes everything from /scratch/.
     
     Parameters used:
     --readFilesCommand zcat # unzips .fastq.gz files
@@ -223,7 +222,7 @@ rule rename_with_donor_timepoint:
 
 rule gedi_index_genome:
     """
-    Build an index for GEDI's GRAND-SLAM to use. Produces a ton of difficult to interpret files, but the most important is the OML that tells GRAND-SLAM where everything else is. It being in a directory called ./config/genomic seems to be hard-coded into GEDI tools, so there it must go, unless there's some way around that.
+    Build an index for GEDI's GRAND-SLAM (https://github.com/erhard-lab/gedi/wiki/GRAND-SLAM) to use. Produces a ton of difficult to interpret files, but the most important is the OML that tells GRAND-SLAM where everything else is. It being in a directory called ./config/genomic seems to be hard-coded into GEDI tools, so there it must go, unless there's some way around that.
     
     By default, it fetches the FASTA and GTF files from ensembl and builds the reference based on those, but if incompatiblity issues arise, you can manually provide your own versions of each, see docs at: https://github.com/erhard-lab/gedi/wiki/Preparing-genomes
     """
@@ -439,16 +438,19 @@ rule multiqc:
 
 rule calc_nascent_total_reads:
     """
-    Run differential gene expression (DGE) analysis on the nascent subset of transcripts, as called by GRAND-SLAM, using edgeR.
+    Calculate nascent and total read counts for each donor, across timepoints. Reads in total read counts and maximum a posteriori (MAP) estimates of nascent-to-total ratio (NTR), and calculates nascent count as total read count * MAP. Writes gene x timepoint dataframes for total and nascent for each donor as output.
     """
     input: 
         read_table = "data/slam_quant/{donor}/grandslam.tsv.gz",
     output: 
         total_counts = "data/processed_reads/{donor}_reads_total.csv",
         nascent_counts = "data/processed_reads/{donor}_reads_nascent.csv"
-    script: "scripts/process_read_table.R"
+    script: "scripts/calc_nascent_total_readcounts.R"
 
 rule map_ensg_genesymbol:
+    """
+    Using GRAND-SLAM's output files that contain both gene alphanumeric names and ENSG IDs, create a file mapping one to other. Since gene names are non-unique, ENSGs will be used for merging and identification operations, but common names will be displayed on plots. This output file allows the former to be converted to the latter when necessary.
+    """
     input: 
         expand(
             "data/slam_quant/{donor}/grandslam.tsv.gz",
@@ -476,6 +478,9 @@ rule merge_reads_across_donors:
     script: "scripts/merge_reads_across_donors.R"
 
 rule dge:
+    """
+    Runs differential gene expression (DGE) analysis for the nascent and total (wildcard {readtype}) subsets of the data, and outputs summary statistics (logFC, pvalue, FDR) for each as a CSV, to be accessed for downstream analysis.
+    """
     input: 
         merged_counts = "outputs/readcounts/merged_counts_{readtype}.csv",
         symbol_ensg_mapping = "data/processed_reads/ensg_genesymbol_mapping.csv",
@@ -484,6 +489,9 @@ rule dge:
     script: "scripts/dge.R"
 
 rule volcano_plot:
+    """
+    Generate a volcano plot given a {readtype} (total/nascent) and a time comparison (15m vs 0m, etc.,) using DGE summary statistics. Significance thresholds (drawn as lines on the plot) for FDR and logFC are passed as params.
+    """
     input: 
         dge_summary_stats = "outputs/dge_results/summary_stats_{readtype}.csv"
     output: 
@@ -494,9 +502,12 @@ rule volcano_plot:
         palette = config['plot_color_palette'],
         plot_width = 8,
         plot_height = 12,
-    script: "scripts/volcano_plot.R"
+    script: "scripts/plot_volcano.R"
 
 rule timecourse_dge_plot:
+    """
+    Generate a plot of gene fold change at each time point for genes (up to 15 by default, user-specified) that are significantly differentially expressed at at least n (2 by default, user-specified) time points.
+    """
     input: 
         dge_summary_stats = "outputs/dge_results/summary_stats_{readtype}.csv"
     output: 
@@ -510,9 +521,10 @@ rule timecourse_dge_plot:
     script: "scripts/plot_dge_timecourse.R"
 
 rule effect_size_correlations_plot:
+    """
+    Plot the correlation of nascent and total fold change magnitudes, given a time point. Add a regression line and a y = x reference line.
+    """
     input: 
-        # nascent = "outputs/dge_results/summary_stats_nascent.csv",
-        # total = "outputs/dge_results/summary_stats_total.csv",
         dge_summary_stats = expand(
             "outputs/dge_results/summary_stats_{readtype}.csv",
             readtype = ['nascent', 'total']
@@ -524,9 +536,10 @@ rule effect_size_correlations_plot:
     script: "scripts/plot_effect_size_correlations.R"
 
 rule venn_diagram_plot:
+    """
+    Generate Venn diagram for genes that are DE in the nascent and the total subsets, given a tiempoint. As before, thresholds are specifiable.
+    """
     input: 
-        # nascent = "outputs/dge_results/summary_stats_nascent.csv",
-        # total = "outputs/dge_results/summary_stats_total.csv",
         dge_summary_stats = expand(
             "outputs/dge_results/summary_stats_{readtype}.csv",
             readtype = ['nascent', 'total']
