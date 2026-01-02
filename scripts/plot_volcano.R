@@ -39,7 +39,13 @@ volcano_plot <- ggplot(summary_stats, aes(x = logFC, y = -log10(FDR))) +
   labs(
     x = bquote(log[2] ~ "(FC)"),
     y = bquote(-log[10] ~ "(FDR)"),
-    title = paste("Volcano Plot:", snakemake@wildcards$readtype, comparison),
+    title = paste(
+      "Volcano Plot:",
+      snakemake@wildcards$readtype,
+      "reads, comparing",
+      stringr::str_replace_all(comparison, "_", " "),
+      "timepoints"
+    ),
   ) +
   theme(legend.title = element_blank())
 
