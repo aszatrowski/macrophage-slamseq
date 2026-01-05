@@ -3,49 +3,44 @@
 
 *Austin Szatrowski [[email](mailto:aszatrowski@uchicago.edu)], based on a SLAMseq analysis pipeline by Jesse Lehman, Pai Lab @ UMass Med*
 
-### Rulegraph:
+### Workflow rulegraph:
 ![pipeline rulegraph](outputs/rulegraph.png)
 
 ## SETUP (START HERE)
-To run this pipeline, you will need to (1) set up a conda environment, (2) build a apptainer/docker container for GEDI (a SLAM-seq quantification software package), and (3) execute the pipeline.
+To run this pipeline, you will need to (1) set up the conda environment with the relevant packages, (2) build a apptainer/singularity container for GEDI (a SLAM-seq quantification software package), (3) install/update R package dependencies and (4) execute the pipeline use snakemake.
 
-1. Build the apptainer container: 
+### 1. Build the apptainer container: 
 ```bash
-apptainer build /project/your-pi/you/containers/gedi_R.sif slamseq/gedi.def
+module load apptainer
+apptainer build /project/your-pi/you/containers/gedi_R.sif macrophage-slamseq/gedi.def
 ```
 In `config.yaml`, set `container_path` to `/project/your-pi/you/containers/gedi_R.sif` so snakemake will know where to find it.
 
-2. Build the conda environment, and activate it:
+This container is like a conda environment, but specifies entire virtual machine, including operating system version and basic software installation, not just specific versions of packages. If you look in the `%post` section of `gedi.def`, you'll see that it installs git, the GEDI installer maven, and R, and uses `git clone` to download and install a pinned version of GEDI. When GRAND-SLAM (from GEDI) is called by its snakemake rule, it gets executed _inside_ the container, and it won't interfere or have dependency conflicts with any other software. This is particularly valuable because (a) GEDI is not available on conda, and (b) it implicitly depends on a specific version of R and several packages.
+
+See the [apptainer docs](https://apptainer.org/docs/user/main/index.html) for details.
+
+### 2. Build the conda environment, and activate it:
 ```bash
 conda create profile/environment.yaml > /path/to/envs/slamseq_v3 
 source setup.sh
 ```
+This will extract the packages specified by `environment.yaml`, install or update them as necessary, and place them in `/path/to/envs/slamseq_v3`; replace `/path/to/envs/` with your desired location, and update `setup.sh` with that path.
+
+`(slamseq_v3)` should then appear at the start of your terminal prompt, and all subsequent steps will occur inside that environment, including snakemake itself and the computations it calls.
+
 * `source activate` may be different on your cluster.
 
-3. Execute the pipeline, using settings in `profile/config.yaml`
+### 3. Update R dependencies
+Similar to conda, R package versions are pinned in `renv.lock`, very similar to conda's `environment.yaml`. To load the packages and versions used to generate this analysis (guaranteed to work), use `renv::restore()`, which will create a special package location right in the working directory containing all the versions exactly as specified in `renv.lock`. If you haven't used the `renv` package before, install it, and see docs here: [renv docs](https://rstudio.github.io/renv/articles/renv.html).
+
+
+### 4. Execute the pipeline, using settings in `profile/config.yaml`
 ```bash
 snakemake --workflow-profile ./profile [-np]
 ```
-* `-np` indicates a snakemake dry run, which prints out all the instances of all the rules to be executed and their corresponding shell commands. Gives an excellent overview of the work to be done, and is useful for debugging.
+* `-np` indicates a snakemake dry run, which prints out all the instances of all the rules to be executed and their corresponding shell commands, but doesn't actually execute. Gives an excellent overview of the work to be done, and is useful for debugging.
 * `profile/config.yaml` is configured for slurm and UChicago's midway3 architecture; some revisions may be necessary.
-
-## Containers
-
-**Make sure you do this before running the pipeline.**
-* This is a container (like a conda environment), but it can specify any system configuration, including OS versions, memory, environment variables, and arbitrary software, rather than just packages on `conda-forge` or `bioconda`. Since GEDI/GRAND-SLAM is on neither, I've specified a container to pin its version and let it run in isolation, just as one would with conda.
-    * The above command builds the container from the definition file (analogous to conda's `environment.yaml`) called `gedi.def`.
-    * Build whereever is convenient (I use a personal directory, and make sure to set `container_path` in `config.yaml` to whereever you've built it, so snakemake can access it.)
-
-## envs:
-* `snakemake` is clean snakemake with the slurm execution plugin
-* `slamseq_v2` is all the dependencies for Jesse's SLAM-seq pipeline with multiqc
-    * major packages:
-        * `snakemake`
-            * `snakemake-executor-plugin-slurm`
-        * `fastp`
-        * `star`
-        * `samtools`
-        * `multiqc`
 
 ## Folders
 * `.snakemake`: under-the-hood metadata for DAG creation, plus execution (`log/`) and rule (`slurm_logs/`) log files
@@ -75,28 +70,31 @@ snakemake --workflow-profile ./profile [-np]
 * `SlamInfer`
     * Calculate nascent-to-total ratio (NTR) per gene using substitution rates
     * Generates intronic-exonic read plot.
+
+## Output Files
 ```
-Setting Java memory...
-Picked up _JAVA_OPTIONS: -Xmx36g -Xms4g
-[90m2025-12-19 16:45:43.252 INFO[0m OS: Linux 4.18.0-305.3.1.el8.x86_64 amd64
-[90m2025-12-19 16:45:43.319 INFO[0m Java: OpenJDK 64-Bit Server VM 17.0.17+10
-[90m2025-12-19 16:45:43.384 INFO[0m Discovering classes in classpath
-[90m2025-12-19 16:45:43.552 INFO[0m Preparing simple class references
-[90m2025-12-19 16:45:43.652 INFO[0m Gedi version 1.0.6a (JAR) startup
-[90m2025-12-19 16:45:43.672 INFO[0m Command: gedi -e Slam -genomic data/gedi_index/homo_sapiens.115.oml -reads data/cit_sample_sets/donor1_rep2.cit -prefix data/slam_quant/donor1_rep2/grandslam -trim5p 10 -trim3p 10 -no4sUpattern control_no4sU -nthreads 30 -progress
-[90m2025-12-19 16:45:43.673 INFO[0m GRAND-SLAM version 2.0.7b
-[90m2025-12-19 16:45:43.822 INFO[0m Reading oml data/gedi_index/homo_sapiens.115.oml
-[90m2025-12-19 16:45:43.829 INFO[0m Done reading oml data/gedi_index/homo_sapiens.115.oml
-[90m2025-12-19 16:45:47.331 INFO[0m Starting SlamCollectStatistics ...
-Warning: Non-unique gene body region; removed 1 nt for: ENSG00000286140,ENSG00000198920
-[90m2025-12-19 16:45:48.177 INFO[0m Reading SNPs...
-[90m2025-12-19 16:45:52.702 INFO[0m Read 1713601 SNPs!
-[90m2025-12-19 16:45:52.708 INFO[0m Collecting reads for each gene (Strand: Antisense) ...
+outputs/
+├── readcounts/
+│   ├── merged_counts_nascent.csv       # Gene × sample count matrix (nascent RNA)
+│   └── merged_counts_total.csv         # Gene × sample count matrix (total RNA)
+├── dge_results/
+│   ├── summary_stats_nascent.csv       # edgeR results for all comparisons (nascent)
+│   └── summary_stats_total.csv         # edgeR results for all comparisons (total)
+├── volcano_plots/
+│   ├── volcanoplot_nascent-{time}_vs_0m.pdf    # Per-timepoint volcano plots (nascent)
+│   └── volcanoplot_total-{time}_vs_0m.pdf      # Per-timepoint volcano plots (total)
+├── venn_diagrams/
+│   └── venn_{time}_vs_0m.png           # Overlap of nascent/total DEGs per timepoint
+├── effect_size_correlations/
+│   └── corr_{time}_vs_0m.pdf           # log2FC correlation between nascent and total
+├── timecourse_dge_plot_nascent.pdf       # log2FC at each timepoint for top DE genes across timepoints (nascent)
+├── timecourse_dge_plot_total.pdf       # log2FC at each timepoint for top DE genes across timepoints (total)
+├── rulegraph.png                        # Snakemake workflow DAG
+├── multiqc_report.html                  # Aggregated QC metrics
+└── multiqc_data/                        # Raw MultiQC data files
 ```
 
-
-## Outputs
-* GRAND-SLAM output fileset
+**Timepoints**: 15, 30, 60, 90, 105, 120 minutes (all comparisons vs 0m baseline)
 
 ## Configuration
 In general, snakemake will submit each job (one rule, executing for one input) in the workflow as its own `sbatch` job. The SBATCH arguments are specified in `profile/config.yaml`:
@@ -111,6 +109,8 @@ default-resources:
   slurm_partition: lbarreiro
 ```
 
+Rules listed in under `localrules:` in the `snakefile` are so lightweight that they can run directly on the login node, and the time spent waiting for the job to submit to slurm simply isn't worth it. These rules are generally file copying, renaming, or linking operations, and all of the plot generation.
+
 ## Approximate timing
 * `cat_fastqs`: seconds
 * `fastp`
@@ -121,3 +121,4 @@ default-resources:
 * `grand_slam`: 
     * 16 threads: 5h for 76G CIT file
     * 30 threads: 2.5h for 76G CIT file
+* All R-based rules (everything downstream of `grand_slam` in the rulegraph): 5-15 seconds per job
