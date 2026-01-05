@@ -1,7 +1,7 @@
 ## CONFIG:
 configfile: "config.yaml"
 # these jobs are so lightweight that they can be run directly on the login node; no need for slurm or compute nodes
-localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, dge, map_ensg_genesymbol, volcano_plot, timecourse_dge_plot, effect_size_correlations_plot, venn_diagram_plot
+localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, dge, map_ensg_genesymbol, volcano_plot, timecourse_dge_plot, effect_size_correlations_plot, venn_diagram_plot, copy_grandslam_qc_plots
 
 DONORS = ['donor1_rep1', 'donor1_rep2']
 sample_ids = list(config['sample_ids'].keys())
@@ -28,6 +28,11 @@ rule all:
         expand(
             "outputs/dge_results/summary_stats_{readtype}.csv",
             readtype = ['total', 'nascent'],
+        ),
+        expand(
+            "outputs/slam_quant_qc/{filename}-{donor}.pdf",
+            filename = ['double', 'mismatches', 'mismatchpos', 'mismatchposzoomed'],
+            donor = DONORS
         ),
         'outputs/multiqc_report.html'
 
@@ -411,6 +416,19 @@ rule grand_slam:
             >> {log} 2>&1
         """
 
+rule copy_grandslam_qc_plots:
+    """
+    Copy GRAND-SLAM qc plots (*.pdf) from data/slam_quant/{donor} to outputs/{donor}_*.pdf so they can be git-tracked and more easily exported.
+    """
+    input: 
+        "data/slam_quant/{donor}/grandslam.{filename}.pdf",
+    output: 
+        "outputs/slam_quant_qc/{filename}-{donor}.pdf",
+    shell: 
+        """
+        cp {input} {output}
+        """
+
 rule multiqc:
     """
     Multiqc (https://docs.seqera.io/multiqc) produces a nice, interactive, all-in-one html dashboard of the QC data for numerous bioinformatics tools, using their standard QC output files. Here, we generate a report from fastp (adapter content % and post-filter per-base quality) and STAR (alignment rate, alignment quality, etc.) I might build a custom module for GRAND-SLAM.
@@ -499,7 +517,7 @@ rule volcano_plot:
         fdr_threshold = 0.05,
         logFC_threshold = 1,
         palette = config['plot_color_palette'],
-        plot_width = 8,
+        plot_width = 10,
         plot_height = 12,
     script: "scripts/plot_volcano.R"
 
