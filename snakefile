@@ -1,7 +1,7 @@
 ## CONFIG:
 configfile: "config.yaml"
 # these jobs are so lightweight that they can be run directly on the login node; no need for slurm or compute nodes
-localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, dge, map_ensg_genesymbol, volcano_plot, timecourse_dge_plot, effect_size_correlations_plot, venn_diagram_plot, copy_grandslam_qc_plots
+localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, dge, map_ensg_genesymbol, volcano_plot, timecourse_dge_plot, effect_size_correlations_plot, venn_diagram_plot, copy_grandslam_qc_plots, signif_effect_size_correlations_plot
 
 DONORS = ['donor1_rep1', 'donor1_rep2']
 sample_ids = list(config['sample_ids'].keys())
@@ -15,6 +15,11 @@ rule all:
         expand(
             "outputs/effect_size_correlations/corr_{comparison}.pdf",
             comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
+        ),
+        expand(
+            "outputs/effect_size_correlations/{deg_set}_signif_corr_{comparison}.pdf",
+            comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m'],
+            deg_set = ['total', 'nascent'],
         ),
         expand(
             "outputs/timecourse_dge_plot_{readtype}.pdf",
@@ -551,6 +556,23 @@ rule effect_size_correlations_plot:
     params:
         palette = config['plot_color_palette'],
     script: "scripts/plot_effect_size_correlations.R"
+
+rule signif_effect_size_correlations_plot:
+    """
+    Plot the correlation of nascent and total fold change magnitudes, using only the genes upregulated in one or the other (as specified by wildcards), given a time point. Add a regression line and a y = x reference line.
+    """
+    input: 
+        dge_summary_stats = expand(
+            "outputs/dge_results/summary_stats_{readtype}.csv",
+            readtype = ['nascent', 'total']
+        )
+    output: 
+        corr_plot = "outputs/effect_size_correlations/{deg_set}_signif_corr_{comparison}.pdf",
+    params:
+        fdr_threshold = 0.05,
+        logFC_threshold = 1,
+        palette = config['plot_color_palette'],
+    script: "scripts/plot_effect_size_correlations_signif.R"
 
 rule venn_diagram_plot:
     """
