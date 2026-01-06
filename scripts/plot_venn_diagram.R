@@ -22,7 +22,7 @@ deg_set_list <- lapply(
   comparison = snakemake@wildcards$comparison
 )
 
-# Check if any DEG sets are empty; creating a dummy file is necessary since venn.diagram() fails on empty sets
+# Check if any DEG sets are empty; creating a dummy file is necessary since venn.diagram() fails on empty sets and snakemake expects an output file
 check_no_degs <- sapply(deg_set_list, length) == 0
 if (any(check_no_degs)) {
   warning("One or more DEG sets are empty. Venn diagram will not be generated.")
