@@ -37,13 +37,25 @@ effect_sizes_nascent_total_df <- Reduce(
     abs(!!as.symbol(logFC_colname)) > as.numeric(snakemake@params$logFC_threshold)
   )
 
+
+# safely handle case where there are no significant DEGs—will return NULL instead of an lm object
+effect_size_lm <- tryCatch(
+  {
+    if (nrow(effect_sizes_nascent_total_df) == 0) {
+      NULL
+    } else {
+      lm(logFC_nascent ~ logFC_total, data = effect_sizes_nascent_total_df)
+    }
+  },
+  error = function(e) NULL
+)
+
 palette <- snakemake@params$palette
 effect_size_corr_plot <- ggplot(
     effect_sizes_nascent_total_df,
-    aes( x = logFC_total, y = logFC_nascent)
+    aes(x = logFC_total, y = logFC_nascent)
   ) +
   geom_point(alpha = 0.6, color = palette[1]) +
-  geom_smooth(method = "lm", color = palette[2], se = FALSE) +
   geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth = 1, color = palette[4]) +
   labs(
     x = bquote("log"[2] ~ "Fold Change (Total)"),
@@ -51,6 +63,17 @@ effect_size_corr_plot <- ggplot(
     title = paste("Effect Size Correlation:", snakemake@wildcards$comparison)
   ) +
   theme_bw()
+
+# Add the fitted regression line only if lm succeeded and coefficients are finite
+if (!is.null(effect_size_lm) && length(coef(effect_size_lm)) >= 2 && all(is.finite(coef(effect_size_lm)[1:2]))) {
+  effect_size_corr_plot <- effect_size_corr_plot +
+    geom_abline(
+      intercept = coef(effect_size_lm)[1],
+      slope = coef(effect_size_lm)[2],
+      color = palette[2],
+      linewidth = 1
+    )
+}
 
 ggsave(
   filename = snakemake@output$corr_plot,

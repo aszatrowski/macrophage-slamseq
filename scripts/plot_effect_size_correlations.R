@@ -23,6 +23,12 @@ effect_sizes_nascent_total_df <- Reduce(
   function(x, y) dplyr::inner_join(x, y, by = c("ENSG", "Gene")), # always join by ENSG to avoid non-unique gene names
   effect_sizes_nascent_total_list
 ) 
+
+effect_size_lm <- lm(
+  logFC_nascent ~ logFC_total,
+  data = effect_sizes_nascent_total_df
+)
+
 palette <- snakemake@params$palette
 effect_size_corr_plot <- ggplot(
   effect_sizes_nascent_total_df,
@@ -30,15 +36,21 @@ effect_size_corr_plot <- ggplot(
     x = logFC_total,
     y = logFC_nascent
   )
-) +
+  ) +
   geom_point(alpha = 0.6, color = palette[1]) +
-  geom_smooth(method = "lm", color = palette[2], se = FALSE) +
+  geom_abline(
+    intercept = effect_size_lm$coefficients[1],
+    slope = effect_size_lm$coefficients[2],
+    color = palette[2],
+    linewidth = 1
+  ) +
   geom_abline(intercept = 0, slope = 1, linetype = "dashed", linewidth = 1, color = palette[4]) +
   coord_fixed() + # equal scaling for x and y axes, so y = x line is at 45 degrees
   labs(
     x = bquote("log"[2] ~ "Fold Change (Total)"),
     y = bquote("log"[2] ~ "Fold Change (Nascent)"),
-    title = paste("Effect Size Correlation:", snakemake@wildcards$comparison)
+    title = paste("Effect Size Correlation:", snakemake@wildcards$comparison),
+    subtitle = bquote("R"^2 ~ "=" ~ .(round(summary(effect_size_lm)$r.squared, 3)))
   ) +
   theme_bw()
 
