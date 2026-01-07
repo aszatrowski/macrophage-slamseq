@@ -418,7 +418,6 @@ rule grand_slam:
             -no4sUpattern no4sU \
             -nthreads {threads} \
             -introns \
-            -progress \
             >> {log} 2>&1
         """
 
