@@ -29,12 +29,11 @@ rule all:
         #     intron_exon_sum = ['intronic', 'exonic'],
         #     readtype = ['total', 'nascent'],
         # ),
-        # expand(
-        #     "outputs/volcano_plots/{intron_exon_sum}/volcanoplot_{readtype}-{comparison}.pdf",
-        #     intron_exon_sum = ['intronic', 'exonic'],
-        #     readtype = ['total', 'nascent'],
-        #     comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
-        # ),
+        expand(
+            "outputs/volcano_plots/volcanoplot_{readtype}-{comparison}.pdf",
+            readtype = ['total', 'nascent'],
+            comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
+        ),
         expand(
             "outputs/dge_results/summary_stats_{readtype}.csv",
             readtype = ['total', 'nascent'],
@@ -529,9 +528,10 @@ rule volcano_plot:
     Generate a volcano plot given a {readtype} (total/nascent) and a time comparison (15m vs 0m, etc.,) using DGE summary statistics. Significance thresholds (drawn as lines on the plot) for FDR and logFC are passed as params.
     """
     input: 
-        dge_summary_stats = "outputs/dge_results/summary_stats_{readtype}.csv"
+        dge_summary_stats = "outputs/dge_results/summary_stats_{readtype}.csv",
     output: 
-        volcano_plot = "outputs/volcano_plots/{intron_exon_sum}/volcanoplot_{readtype}-{comparison}.pdf",
+        volcano_plot = "outputs/volcano_plots/volcanoplot_{readtype}-{comparison}.pdf",
+
     params:
         fdr_threshold = 0.05,
         logFC_threshold = 1,
