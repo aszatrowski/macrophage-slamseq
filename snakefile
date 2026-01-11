@@ -8,31 +8,41 @@ sample_ids = list(config['sample_ids'].keys())
 
 rule all:
     input: 
+        # expand(
+        #     "outputs/venn_diagrams/{intron_exon_sum}/venn_{comparison}.png",
+        #     intron_exon_sum = ['intronic', 'exonic'],
+        #     comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
+        # ),
+        # expand(
+        #     "outputs/effect_size_correlations/{intron_exon_sum}/corr_{comparison}.pdf",
+        #     intron_exon_sum = ['intronic', 'exonic'],
+        #     comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
+        # ),
+        # expand(
+        #     "outputs/effect_size_correlations/{intron_exon_sum}/{deg_set}_signif_corr_{comparison}.pdf",
+        #     intron_exon_sum = ['intronic', 'exonic'],
+        #     comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m'],
+        #     deg_set = ['total', 'nascent'],
+        # ),
+        # expand(
+        #     "outputs/timecourse_dge_plot/{intron_exon_sum}_{readtype}.pdf",
+        #     intron_exon_sum = ['intronic', 'exonic'],
+        #     readtype = ['total', 'nascent'],
+        # ),
+        # expand(
+        #     "outputs/volcano_plots/{intron_exon_sum}/volcanoplot_{readtype}-{comparison}.pdf",
+        #     intron_exon_sum = ['intronic', 'exonic'],
+        #     readtype = ['total', 'nascent'],
+        #     comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
+        # ),
+        # expand(
+        #     "outputs/dge_results/summary_stats_{readtype}.csv",
+        #     readtype = ['total', 'nascent'],
+        # ),
         expand(
-            "outputs/venn_diagrams/venn_{comparison}.png",
-            comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
-        ),
-        expand(
-            "outputs/effect_size_correlations/corr_{comparison}.pdf",
-            comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
-        ),
-        expand(
-            "outputs/effect_size_correlations/{deg_set}_signif_corr_{comparison}.pdf",
-            comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m'],
-            deg_set = ['total', 'nascent'],
-        ),
-        expand(
-            "outputs/timecourse_dge_plot_{readtype}.pdf",
+            "data/processed_reads/{donor}_reads_{readtype}.csv",
             readtype = ['total', 'nascent'],
-        ),
-        expand(
-            "outputs/volcano_plots/volcanoplot_{readtype}-{comparison}.pdf",
-            readtype = ['total', 'nascent'],
-            comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
-        ),
-        expand(
-            "outputs/dge_results/summary_stats_{readtype}.csv",
-            readtype = ['total', 'nascent'],
+            donor = DONORS,
         ),
         expand(
             "outputs/slam_quant_qc/{filename}-{donor}.pdf",
@@ -517,7 +527,7 @@ rule volcano_plot:
     input: 
         dge_summary_stats = "outputs/dge_results/summary_stats_{readtype}.csv"
     output: 
-        volcano_plot = "outputs/volcano_plots/volcanoplot_{readtype}-{comparison}.pdf",
+        volcano_plot = "outputs/volcano_plots/{intron_exon_sum}/volcanoplot_{readtype}-{comparison}.pdf",
     params:
         fdr_threshold = 0.05,
         logFC_threshold = 1,
@@ -533,7 +543,8 @@ rule timecourse_dge_plot:
     input: 
         dge_summary_stats = "outputs/dge_results/summary_stats_{readtype}.csv"
     output: 
-        timecourse_dge_plot = "outputs/timecourse_dge_plot_{readtype}.pdf",
+        timecourse_dge_plot = "outputs/timecourse_dge_plot/{intron_exon_sum}_{readtype}.pdf",
+
     params:
         n_timepoints_dge_threshold = 2,
         fdr_threshold = 0.05,
@@ -552,7 +563,8 @@ rule effect_size_correlations_plot:
             readtype = ['nascent', 'total']
         )
     output: 
-        corr_plot = "outputs/effect_size_correlations/corr_{comparison}.pdf"
+        corr_plot = "outputs/effect_size_correlations/{intron_exon_sum}/corr_{comparison}.pdf",
+
     params:
         palette = config['plot_color_palette'],
     script: "scripts/plot_effect_size_correlations.R"
@@ -567,7 +579,7 @@ rule signif_effect_size_correlations_plot:
             readtype = ['nascent', 'total']
         )
     output: 
-        corr_plot = "outputs/effect_size_correlations/{deg_set}_signif_corr_{comparison}.pdf",
+        corr_plot = "outputs/effect_size_correlations/{intron_exon_sum}/{deg_set}_signif_corr_{comparison}.pdf",
     params:
         fdr_threshold = 0.05,
         logFC_threshold = 1,
@@ -584,7 +596,7 @@ rule venn_diagram_plot:
             readtype = ['nascent', 'total']
         )
     output: 
-        venn_diagram = "outputs/venn_diagrams/venn_{comparison}.png"
+        venn_diagram = "outputs/venn_diagrams/{intron_exon_sum}/venn_{comparison}.png",
     params:
         fdr_threshold = 0.05,
         logFC_threshold = 1,
