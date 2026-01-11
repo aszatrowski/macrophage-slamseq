@@ -45,12 +45,20 @@ reference_rows_df$logFC <- 0
 # subset summary_stats to only include genes in de_genes_frequent
 de_genes_timecourse <- dplyr::filter(summary_stats, Gene %in% de_genes_frequent)
 # append reference rows to de_genes_timecourse so they'll show up in the plot
-de_genes_timecourse <- rbind(de_genes_timecourse, reference_rows_df)
-
+de_genes_timecourse <- rbind(de_genes_timecourse, reference_rows_df) |>
+  # separate Gene into Gene and intron/exon columns
+  tidyr::separate_wider_delim(
+    cols = Gene,
+    delim = "_",
+    names = c("Gene", "intron_exon"),
+    names_repair = "universal"
+  )
 # Manual port of palette "Klein" from package MoMAColors 
 palette <- c("#FF4D6FFF", "#579EA4FF", "#DF7713FF", "#F9C000FF", "#86AD34FF", "#5D7298FF", "#81B28DFF", "#7E1A2FFF", "#2D2651FF", "#C8350DFF", "#BD777AFF")
 
-timecourse_dge_plot <- ggplot(de_genes_timecourse, aes(x = timepoint, y = logFC, color = Gene)) +
+timecourse_dge_plot <- ggplot(
+  de_genes_timecourse,
+  aes(x = timepoint, y = logFC, color = Gene, linetype = intron_exon)) +
   geom_line() +
   geom_point() +
   scale_color_manual(values = rep(palette, length.out = length(de_genes_frequent))) +
@@ -66,7 +74,9 @@ timecourse_dge_plot <- ggplot(de_genes_timecourse, aes(x = timepoint, y = logFC,
       snakemake@wildcards$readtype,
       " RNA"
     ),
-    subtitle = params_string
+    subtitle = params_string,
+    color = "Gene",
+    linetype = "Read Type"
   )
 
 ggsave(

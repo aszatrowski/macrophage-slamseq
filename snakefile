@@ -24,11 +24,11 @@ rule all:
         #     comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m'],
         #     deg_set = ['total', 'nascent'],
         # ),
-        # expand(
-        #     "outputs/timecourse_dge_plot/{intron_exon_sum}_{readtype}.pdf",
-        #     intron_exon_sum = ['intronic', 'exonic'],
-        #     readtype = ['total', 'nascent'],
-        # ),
+        expand(
+            "outputs/timecourse_dge_plot/{intron_exon_sum}_{readtype}.pdf",
+            intron_exon_sum = ['all'],
+            readtype = ['total', 'nascent'],
+        ),
         expand(
             "outputs/volcano_plots/volcanoplot_{readtype}-{comparison}.pdf",
             readtype = ['total', 'nascent'],
@@ -548,12 +548,11 @@ rule timecourse_dge_plot:
         dge_summary_stats = "outputs/dge_results/summary_stats_{readtype}.csv"
     output: 
         timecourse_dge_plot = "outputs/timecourse_dge_plot/{intron_exon_sum}_{readtype}.pdf",
-
     params:
         n_timepoints_dge_threshold = 2,
         fdr_threshold = 0.05,
         logFC_threshold = 1,
-        max_genes_to_plot = 15,
+        max_genes_to_plot = 8,
         time_unit = "min",
     script: "scripts/plot_dge_timecourse.R"
 
