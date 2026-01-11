@@ -35,10 +35,10 @@ rule all:
         #     readtype = ['total', 'nascent'],
         #     comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
         # ),
-        # expand(
-        #     "outputs/dge_results/summary_stats_{readtype}.csv",
-        #     readtype = ['total', 'nascent'],
-        # ),
+        expand(
+            "outputs/dge_results/summary_stats_{readtype}.csv",
+            readtype = ['total', 'nascent'],
+        ),
         expand(
             "outputs/readcounts/merged_counts_{readtype}.csv",
             readtype = ['total', 'nascent'],
