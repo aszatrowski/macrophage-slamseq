@@ -15,4 +15,8 @@ merged_counts_df <- purrr::reduce(
     suffix = paste0("_", snakemake@params$donor)
   )
 )
+
+# Keep "Gene" as the first column, sort the remaining columns alphabetically, so that they follow timepoint, rather than donor order
+merged_counts_df <- merged_counts_df[, c("Gene", sort(setdiff(names(merged_counts_df), "Gene")))]
+
 readr::write_csv(merged_counts_df, snakemake@output$merged_counts)
