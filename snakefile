@@ -40,6 +40,10 @@ rule all:
         #     readtype = ['total', 'nascent'],
         # ),
         expand(
+            "outputs/readcounts/merged_counts_{readtype}.csv",
+            readtype = ['total', 'nascent'],
+        ),
+        expand(
             "data/processed_reads/{donor}_reads_{readtype}.csv",
             readtype = ['total', 'nascent'],
             donor = DONORS,
