@@ -20,15 +20,26 @@ summary_stats <- readr::read_csv(snakemake@input$dge_summary_stats, show_col_typ
       FDR < fdr_threshold & logFC < -logFC_threshold ~ "Downregulated",
       .default = "Not Significant"
     )
+  ) |>
+  # separate Gene into Gene and intron/exon columns
+  tidyr::separate_wider_delim(
+    cols = Gene,
+    delim = "_",
+    names = c("Gene", "intron_exon"),
+    names_repair = "universal"
   )
 
+
 volcano_plot <- ggplot(summary_stats, aes(x = logFC, y = -log10(FDR))) +
-  geom_point(aes(color = significance), size = 1.5) +
-  scale_color_manual(values = c("Upregulated" = palette[[2]], "Downregulated" = palette[[1]], "Not Significant" = palette[[4]])) +
+  geom_point(aes(color = significance, alpha = intron_exon), size = 2) +
+  scale_color_manual(
+    values = c("Upregulated" = palette[[2]], "Downregulated" = palette[[1]], "Not Significant" = palette[[4]])
+  ) +
+  scale_alpha_manual(values = c("intronic" = 0.5, "exonic" = 0.9)) +
   ggrepel::geom_label_repel(
     data = subset(summary_stats, FDR < fdr_threshold & abs(logFC) > logFC_threshold),
     aes(label = Gene),
-    size = 3,
+    size = 4,
     box.padding = 0.3,
     point.padding = 0.25,
     max.overlaps = 15
@@ -46,8 +57,9 @@ volcano_plot <- ggplot(summary_stats, aes(x = logFC, y = -log10(FDR))) +
       stringr::str_replace_all(comparison, "_", " "),
       "timepoints"
     ),
-  ) +
-  theme(legend.title = element_blank())
+    color = "Significance",
+    alpha = "Read Type"
+  )
 
 ggsave(
   filename = snakemake@output$volcano_plot,
