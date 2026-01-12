@@ -31,7 +31,7 @@ summary_stats <- readr::read_csv(snakemake@input$dge_summary_stats, show_col_typ
 
 
 volcano_plot <- ggplot(summary_stats, aes(x = logFC, y = -log10(FDR))) +
-  geom_point(aes(color = significance, alpha = intron_exon), size = 2) +
+  geom_point(aes(color = significance, alpha = intron_exon), size = 2.5) +
   scale_color_manual(
     values = c("Upregulated" = palette[[2]], "Downregulated" = palette[[1]], "Not Significant" = palette[[4]])
   ) +
