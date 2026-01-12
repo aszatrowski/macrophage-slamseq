@@ -482,19 +482,6 @@ rule calc_nascent_total_reads:
         nascent_counts = "data/processed_reads/{donor}_reads_nascent.csv"
     script: "scripts/calc_nascent_total_readcounts.R"
 
-rule map_ensg_genesymbol:
-    """
-    Using GRAND-SLAM's output files that contain both gene alphanumeric names and ENSG IDs, create a file mapping one to other. Since gene names are non-unique, ENSGs will be used for merging and identification operations, but common names will be displayed on plots. This output file allows the former to be converted to the latter when necessary.
-    """
-    input: 
-        expand(
-            "data/slam_quant/{donor}/grandslam.tsv.gz",
-            donor = DONORS[0] # only need to run once
-        )
-    output: 
-        symbol_ensg_mapping = "data/processed_reads/ensg_genesymbol_mapping.csv"
-    script: "scripts/map_ensg_symbol.R"
-
 rule merge_reads_across_donors:
     """
     Merge read counts across donors into two CSV files, one for nascent counts and the other for total counts.
@@ -552,7 +539,7 @@ rule timecourse_dge_plot:
         n_timepoints_dge_threshold = 2,
         fdr_threshold = 0.05,
         logFC_threshold = 1,
-        max_genes_to_plot = 8,
+        max_genes_to_plot = 9,
         time_unit = "min",
     script: "scripts/plot_dge_timecourse.R"
 

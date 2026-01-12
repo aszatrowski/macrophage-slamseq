@@ -53,17 +53,18 @@ de_genes_timecourse <- rbind(de_genes_timecourse, reference_rows_df) |>
     names = c("Gene", "intron_exon"),
     names_repair = "universal"
   )
-# Manual port of palette "Klein" from package MoMAColors 
-palette <- c("#FF4D6FFF", "#579EA4FF", "#DF7713FF", "#F9C000FF", "#86AD34FF", "#5D7298FF", "#81B28DFF", "#7E1A2FFF", "#2D2651FF", "#C8350DFF", "#BD777AFF")
+
+palette <- c("#2E1262", "#0f6a75ff")
 
 timecourse_dge_plot <- ggplot(
   de_genes_timecourse,
-  aes(x = timepoint, y = logFC, color = Gene, linetype = intron_exon)) +
+  aes(x = timepoint, y = logFC, color = intron_exon, linetype = intron_exon)) +
   geom_line() +
   geom_point() +
-  scale_color_manual(values = rep(palette, length.out = length(de_genes_frequent))) +
   scale_x_continuous(breaks = unique(de_genes_timecourse$timepoint)) +
-  theme_minimal() +
+  scale_color_manual(values = palette, guide = "none") +
+  theme_bw() +
+  facet_wrap(~Gene) +
   labs(
     x = paste0("Timepoint ", "(", snakemake@params$time_unit, ")"),
     y = bquote(log[2] ~ "(FC)"),
@@ -75,7 +76,6 @@ timecourse_dge_plot <- ggplot(
       " RNA"
     ),
     subtitle = params_string,
-    color = "Gene",
     linetype = "Read Type"
   )
 

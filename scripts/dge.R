@@ -1,5 +1,6 @@
 # Activate renv environment
 source("renv/activate.R")
+library(org.Hs.eg.db)
 library(edgeR)
 read_counts_df <- readr::read_csv(snakemake@input$merged_counts, show_col_types = FALSE) |>
   dplyr::mutate(across(where(is.double), ~ replace(.x, is.na(.x), 0)))
@@ -39,19 +40,42 @@ names(qlf_list) <- stringr::str_replace(colnames(design)[-1], "timepoints", "")
 qlf_list <- qlf_list[order(as.numeric(names(qlf_list)))]
 
 # Extract results
-export_results <- function(qlf, timepoint, mapping) {
+export_results <- function(qlf, timepoint) {
   results <- topTags(qlf, n = Inf, adjust.method = "BH", sort.by = "PValue")$table
   results <- results |>
-    dplyr::left_join(symbol_ensg_mapping, by = c("genes" = "Gene")) |>
-    dplyr::rename(Gene = "Symbol", ENSG = "genes") |>
     dplyr::mutate(
+      # rename "genes" with ENSGs to "ENSG"
+      ENSG_ei = genes,
+      # retrieve Gene column gene symbols, preserving intronic/exonic suffixes; temporarily remove suffixes to match in mapping
+      Gene = {
+        # remove intronic/exonic suffix for mapping and retrieve symbol from org.Hs.eg.db
+        symbols <- mapIds(
+          org.Hs.eg.db,
+          keys = sub("_(intronic|exonic)$", "", genes),
+          column = "SYMBOL",
+          keytype = "ENSEMBL",
+          multiVals = "first"
+        )
+        # Use ENSEMBL ID when symbol is NA
+        symbols <- ifelse(is.na(symbols), 
+                          sub("_(intronic|exonic)$", "", genes), 
+                          symbols)
+        # append intronic/exonic suffix back to symbols
+        paste(
+          symbols,
+          dplyr::case_when(
+            stringr::str_detect(ENSG_ei, "_intronic$") ~ "intronic",
+            stringr::str_detect(ENSG_ei, "_exonic$") ~ "exonic",
+            TRUE ~ ""
+          ),
+          sep = "_"
+        )
+      },
       timepoint = timepoint,
       comparison = paste(timepoint, "vs", "0m", sep = "_")) |>
-    dplyr::select(Gene, timepoint, comparison, logFC, logCPM, F, PValue, FDR, ENSG)
+    dplyr::select(Gene, timepoint, comparison, logFC, logCPM, F, PValue, FDR, ENSG_ei)
   return(results)
 }
-
-symbol_ensg_mapping <- readr::read_csv(snakemake@input$symbol_ensg_mapping, show_col_types = FALSE)
 
 dge_results <- do.call(
   rbind,
@@ -59,7 +83,6 @@ dge_results <- do.call(
     export_results,
     qlf = qlf_list,
     timepoint = names(qlf_list),
-    MoreArgs = list(mapping = symbol_ensg_mapping),
     SIMPLIFY = FALSE
   )
 )
