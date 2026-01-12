@@ -13,11 +13,11 @@ rule all:
             intron_exon = ['intronic', 'exonic'],
             comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
         ),
-        # expand(
-        #     "outputs/effect_size_correlations/{intron_exon_sum}/corr_{comparison}.pdf",
-        #     intron_exon_sum = ['intronic', 'exonic'],
-        #     comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
-        # ),
+        expand(
+            "outputs/effect_size_correlations/{intron_exon}/corr_{comparison}.pdf",
+            intron_exon = ['intronic', 'exonic'],
+            comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
+        ),
         # expand(
         #     "outputs/effect_size_correlations/{intron_exon_sum}/{deg_set}_signif_corr_{comparison}.pdf",
         #     intron_exon_sum = ['intronic', 'exonic'],
@@ -553,8 +553,7 @@ rule effect_size_correlations_plot:
             readtype = ['nascent', 'total']
         )
     output: 
-        corr_plot = "outputs/effect_size_correlations/{intron_exon_sum}/corr_{comparison}.pdf",
-
+        corr_plot = "outputs/effect_size_correlations/{intron_exon}/corr_{comparison}.pdf",
     params:
         palette = config['plot_color_palette'],
     script: "scripts/plot_effect_size_correlations.R"
