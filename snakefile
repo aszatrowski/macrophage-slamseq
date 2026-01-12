@@ -1,7 +1,7 @@
 ## CONFIG:
 configfile: "config.yaml"
 # these jobs are so lightweight that they can be run directly on the login node; no need for slurm or compute nodes
-localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, dge, map_ensg_genesymbol, volcano_plot, timecourse_dge_plot, effect_size_correlations_plot, venn_diagram_plot, copy_grandslam_qc_plots, signif_effect_size_correlations_plot
+localrules: cat_fastqs, index_bam, rename_with_donor_timepoint, multiqc, calc_nascent_total_reads, merge_reads_across_donors, dge, volcano_plot, timecourse_dge_plot, effect_size_correlations_plot, venn_diagram_plot, copy_grandslam_qc_plots, signif_effect_size_correlations_plot
 
 DONORS = ['donor1_rep1', 'donor1_rep2']
 sample_ids = list(config['sample_ids'].keys())
@@ -18,12 +18,11 @@ rule all:
             intron_exon = ['intronic', 'exonic'],
             comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
         ),
-        # expand(
-        #     "outputs/effect_size_correlations/{intron_exon_sum}/{deg_set}_signif_corr_{comparison}.pdf",
-        #     intron_exon_sum = ['intronic', 'exonic'],
-        #     comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m'],
-        #     deg_set = ['total', 'nascent'],
-        # ),
+        expand(
+            "outputs/effect_size_correlations/{intron_exon}/{deg_set}_signif_corr_{comparison}.pdf", intron_exon = ['intronic', 'exonic'],
+            comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m'],
+            deg_set = ['total', 'nascent'],
+        ),
         expand(
             "outputs/timecourse_dge_plot/{intron_exon_sum}_{readtype}.pdf",
             intron_exon_sum = ['all'],
@@ -37,15 +36,6 @@ rule all:
         expand(
             "outputs/dge_results/summary_stats_{readtype}.csv",
             readtype = ['total', 'nascent'],
-        ),
-        expand(
-            "outputs/readcounts/merged_counts_{readtype}.csv",
-            readtype = ['total', 'nascent'],
-        ),
-        expand(
-            "data/processed_reads/{donor}_reads_{readtype}.csv",
-            readtype = ['total', 'nascent'],
-            donor = DONORS,
         ),
         expand(
             "outputs/slam_quant_qc/{filename}-{donor}.pdf",

@@ -3,16 +3,19 @@ source("renv/activate.R")
 suppressWarnings(library(dplyr))
 library(ggplot2)
 
+intron_exon <- snakemake@wildcards$intron_exon
+
 read_summary_stats <- function(path, comparison_value) {
   # regex to retrieve readtype from filename
   readtype <- gsub(".*summary_stats_(nascent|total)\\.csv$", "\\1", path)
   logFC_colname <- paste0("logFC_", readtype)
   FDR_colname <- paste0("FDR_", readtype)
   summary_stats_readtype <- readr::read_csv(path, show_col_types = FALSE) |>
+    dplyr::filter(stringr::str_detect(Gene, paste0("_", intron_exon))) |>
     dplyr::filter(comparison == comparison_value) |>
     dplyr::rename(!!logFC_colname := logFC) |>
     dplyr::rename(!!FDR_colname := FDR) |>
-    select(Gene, !!logFC_colname,!!FDR_colname, ENSG)
+    select(Gene, !!logFC_colname,!!FDR_colname, ENSG_ei)
   return(summary_stats_readtype)
 }
 
@@ -28,7 +31,7 @@ logFC_colname <- paste0("logFC_", significance_deg_set)
 FDR_colname <- paste0("FDR_", significance_deg_set)
 
 effect_sizes_nascent_total_df <- Reduce(
-  function(x, y) dplyr::inner_join(x, y, by = c("ENSG", "Gene")), # always join by ENSG to avoid non-unique gene names
+  function(x, y) dplyr::inner_join(x, y, by = c("ENSG_ei", "Gene")), # always join by ENSG_ei to avoid non-unique gene names
   effect_sizes_nascent_total_list
 ) |> 
   # filter to only significant DEGs in wildcard-specified DEG set
@@ -60,7 +63,10 @@ effect_size_corr_plot <- ggplot(
   labs(
     x = bquote("log"[2] ~ "Fold Change (Total)"),
     y = bquote("log"[2] ~ "Fold Change (Nascent)"),
-    title = paste("Effect Size Correlation:", snakemake@wildcards$comparison)
+    title = paste("FC Correlation:", snakemake@wildcards$comparison, intron_exon, "reads; subset to DEGs in", significance_deg_set, "reads"),
+    subtitle = bquote(
+      R^2 ~ "=" ~ .(if (!is.null(effect_size_lm)) round(summary(effect_size_lm)$r.squared, 3) else "NA")
+    )
   ) +
   theme_bw()
 
