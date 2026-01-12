@@ -529,7 +529,7 @@ rule timecourse_dge_plot:
         n_timepoints_dge_threshold = 2,
         fdr_threshold = 0.05,
         logFC_threshold = 1,
-        max_genes_to_plot = 9,
+        max_genes_to_plot = 16,
         time_unit = "min",
     script: "scripts/plot_dge_timecourse.R"
 
