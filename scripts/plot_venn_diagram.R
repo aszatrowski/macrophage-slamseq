@@ -6,22 +6,37 @@ library(VennDiagram)
 
 fdr_threshold <- snakemake@params$fdr_threshold
 logFC_threshold <- snakemake@params$logFC_threshold
-intron_exon <- snakemake@params$intron_exon
+intron_exon <- snakemake@wildcards$intron_exon
 
-read_summary_stats_get_degs <- function(path, comparison) {
-  deg_set <- readr::read_csv(path, show_col_types = FALSE) |>
-    dplyr::filter(stringr::str_detect(Gene, paste0("_", intron_exon))) |>
-    dplyr::filter(comparison == !!comparison) |>
-    dplyr::filter(FDR < fdr_threshold & abs(logFC) > logFC_threshold) |>
-    select(ENSG_ei) |>
-    unlist()
-  return(deg_set)
+if (intron_exon == "either") {
+  read_summary_stats_get_degs <- function(path, comparison, intron_exon) {
+    deg_set <- readr::read_csv(path, show_col_types = FALSE) |>
+      dplyr::filter(comparison == !!comparison) |>
+      dplyr::filter(FDR < fdr_threshold & abs(logFC) > logFC_threshold) |>
+      # remove distinction between intronic/exonic such that either or both counts as 1 DEG hit
+      dplyr::mutate(ENSG_ei = stringr::str_replace(ENSG_ei, "_(intronic|exonic)$", "")) |>
+      dplyr::select(ENSG_ei) |>
+      dplyr::distinct(ENSG_ei) |>
+      unlist()
+    return(deg_set)
+  }
+} else {
+  read_summary_stats_get_degs <- function(path, comparison, intron_exon) {
+    deg_set <- readr::read_csv(path, show_col_types = FALSE) |>
+      dplyr::filter(stringr::str_detect(Gene, paste0("_", intron_exon))) |>
+      dplyr::filter(comparison == !!comparison) |>
+      dplyr::filter(FDR < fdr_threshold & abs(logFC) > logFC_threshold) |>
+      select(ENSG_ei) |>
+      unlist()
+    return(deg_set)
+  }
 }
 
 deg_set_list <- lapply(
   X = snakemake@input$dge_summary_stats,
   FUN = read_summary_stats_get_degs,
-  comparison = snakemake@wildcards$comparison
+  comparison = snakemake@wildcards$comparison,
+  intron_exon = intron_exon
 )
 
 # Check if any DEG sets are empty; creating a dummy file is necessary since venn.diagram() fails on empty sets and snakemake expects an output file

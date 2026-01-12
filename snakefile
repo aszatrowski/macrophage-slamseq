@@ -10,7 +10,7 @@ rule all:
     input: 
         expand(
             "outputs/venn_diagrams/{intron_exon}/venn_{comparison}.png",
-            intron_exon = ['intronic', 'exonic'],
+            intron_exon = ['intronic', 'exonic', 'either'],
             comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
         ),
         expand(
