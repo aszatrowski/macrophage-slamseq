@@ -56,7 +56,9 @@ VennDiagram::venn.diagram(
 
   main = paste(
     "Venn Diagram: Total and Nascent RNA for",
-    snakemake@wildcards$comparison
+    snakemake@wildcards$comparison,
+    intron_exon,
+    "reads"
   ),
   sub = paste0(
     "DEGs (FDR < ", fdr_threshold,
