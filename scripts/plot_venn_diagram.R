@@ -6,12 +6,14 @@ library(VennDiagram)
 
 fdr_threshold <- snakemake@params$fdr_threshold
 logFC_threshold <- snakemake@params$logFC_threshold
+intron_exon <- snakemake@params$intron_exon
 
 read_summary_stats_get_degs <- function(path, comparison) {
   deg_set <- readr::read_csv(path, show_col_types = FALSE) |>
+    dplyr::filter(stringr::str_detect(Gene, paste0("_", intron_exon))) |>
     dplyr::filter(comparison == !!comparison) |>
     dplyr::filter(FDR < fdr_threshold & abs(logFC) > logFC_threshold) |>
-    select(ENSG) |>
+    select(ENSG_ei) |>
     unlist()
   return(deg_set)
 }

@@ -8,11 +8,11 @@ sample_ids = list(config['sample_ids'].keys())
 
 rule all:
     input: 
-        # expand(
-        #     "outputs/venn_diagrams/{intron_exon_sum}/venn_{comparison}.png",
-        #     intron_exon_sum = ['intronic', 'exonic'],
-        #     comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
-        # ),
+        expand(
+            "outputs/venn_diagrams/{intron_exon}/venn_{comparison}.png",
+            intron_exon = ['intronic', 'exonic'],
+            comparison = ['15_vs_0m','30_vs_0m','60_vs_0m','90_vs_0m','105_vs_0m','120_vs_0m']
+        ),
         # expand(
         #     "outputs/effect_size_correlations/{intron_exon_sum}/corr_{comparison}.pdf",
         #     intron_exon_sum = ['intronic', 'exonic'],
@@ -586,7 +586,7 @@ rule venn_diagram_plot:
             readtype = ['nascent', 'total']
         )
     output: 
-        venn_diagram = "outputs/venn_diagrams/{intron_exon_sum}/venn_{comparison}.png",
+        venn_diagram = "outputs/venn_diagrams/{intron_exon}/venn_{comparison}.png",
     params:
         fdr_threshold = 0.05,
         logFC_threshold = 1,
